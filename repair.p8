@@ -22,6 +22,17 @@ function vector2str(v)
  return "("..v.x..","..v.y..")"
 end
 
+function orientation(v1,v2)
+ local val=v1.y*v2.x-v1.x*v2.y
+ if val==0 then
+  return 0  --co-linear
+ elseif val<0 then
+  return 1  --clockwise
+ else
+  return -1 --counter-clockwise
+ end
+end
+
 function dump_list(l)
  local s=nil
  for i in all(l) do
@@ -62,7 +73,7 @@ end
 -->8
 -- tiles
 gridtile={}
-tile_size=13
+tilesize=13
 
 function gridtile:new(
  entries,connections,o
@@ -166,14 +177,14 @@ end
 
 function grid:screen_pos(pos)
  return new_vector(
-  pos.x*tile_size+5,
-  pos.y*tile_size+18
+  pos.x*tilesize+5,
+  pos.y*tilesize+18
  )
 end
 
 function grid:draw()
- for x=0,self.w do
-  for y=0,self.h do
+ for x=0,self.w-1 do
+  for y=0,self.h-1 do
    local m=mget(x,y)
    if m>0 then
     local si=128+(m-16)*2
@@ -193,22 +204,81 @@ end
 -- bot
 bot={}
 
-function bot:set_next_pos()
- local tile=grid:tile_at(
-  self.pos
- )
- tile:dump()
- local l=tile:exits_from(
-   opposite(self.dir)
-  )
- dump_list(l)
- self.nxt_dir=rnd_item_from(
-  tile:exits_from(
-   opposite(self.dir)
-  )
- )
- self.nxt_pos=
-  self.pos+vdirs[self.nxt_dir]
+function move_straight(bot,dr)
+ return function()
+  for i=1,tilesize do
+   bot.dx+=dr.x
+   bot.dy+=dr.y
+   yield()
+  end
+ end
+end
+
+function move_reverse(bot,dr)
+ return function()
+  local delta=ceil(tilesize/2)
+
+  --move halfway
+  for i=1,delta do
+   bot.dx+=dr.x
+   bot.dy+=dr.y
+   yield()
+  end
+
+  --turn
+  for i=1,8 do
+   bot.rot=(bot.rot+1)%16
+   yield()
+  end
+
+  --move back
+  for i=1,delta do
+   bot.dx-=dr.x
+   bot.dy-=dr.y
+   yield()
+  end
+ end
+end
+
+function move_turn(bot,dr1,dr2)
+ return function()
+  local o=orientation(dr1,dr2)
+  local delta=ceil(tilesize/2)
+  local ssteps=2
+
+  --initial straight bit
+  for i=1,ssteps do
+   bot.dx+=dr1.x
+   bot.dy+=dr1.y
+   yield()
+  end
+
+  --half-turn
+  for i=1,2 do
+   bot.rot=(bot.rot+16+o)%16
+   yield()
+  end
+
+  --move diagonally
+  for i=1,delta-2*ssteps do
+   bot.dx+=dr1.x+dr2.x
+   bot.dy+=dr1.y+dr2.y
+   yield()
+  end
+
+  --complete-turn
+  for i=1,2 do
+   bot.rot=(bot.rot+16+o)%16
+   yield()
+  end
+
+  --final straight bit
+  for i=1,ssteps do
+   bot.dx+=dr2.x
+   bot.dy+=dr2.y
+   yield()
+  end
+ end
 end
 
 function bot:new(pos,o)
@@ -216,38 +286,87 @@ function bot:new(pos,o)
  self.__index=self
 
  o.period=15
+
+ --coarse grid movement
  o.pos=pos
  local tile=grid:tile_at(pos)
  local entry=rnd_item_from(
   tile:all_entries()
  )
  o.dir=opposite(entry)
- printh("pos="..vector2str(o.pos))
- printh("dir="..o.dir)
- bot.set_next_pos(o)
+ bot.choose_next_dest(o)
+
  o.clk=0
 
  return o
 end
 
+function bot:switch_move_anim()
+ printh("start switch_anim")
+
+ local entry=opposite(self.dir)
+ local vdir=vdirs[entry]
+ local delta=flr(tilesize/2)
+
+ -- fine-grained drawing state
+ self.dx=vdir.x*delta
+ self.dy=vdir.y*delta
+ self.rot=(self.dir-1)*4
+ if self.dir==self.nxt_dir then
+  self.move_anim=cocreate(
+   move_straight(
+    self,vdirs[self.dir]
+   )
+  )
+ elseif abs(
+  self.dir-self.nxt_dir
+ )==2 then
+  self.move_anim=cocreate(
+   move_reverse(
+    self,vdirs[self.dir]
+   )
+  )
+ else
+  self.move_anim=cocreate(
+   move_turn(
+    self,
+    vdirs[self.dir],
+    vdirs[self.nxt_dir]
+   )
+  )
+ end
+ printh("end switch_anim")
+end
+
+function bot:choose_next_dest()
+ local tile=grid:tile_at(
+  self.pos
+ )
+ tile:dump()
+ self.nxt_dir=rnd_item_from(
+  tile:exits_from(
+   opposite(self.dir)
+  )
+ )
+ self.nxt_pos=
+  self.pos+vdirs[self.nxt_dir]
+ self:switch_move_anim()
+end
+
 function bot:update()
- self.clk=(
-  self.clk+1
- )%self.period
- if self.clk==0 then
-  printh("pos_old="..vector2str(self.pos))
-  printh("pos_new="..vector2str(self.nxt_pos))
-  printh("dir_old="..self.dir)
-  printh("dir_new="..self.nxt_dir)
-  self.dir=self.nxt_dir
+ assert(coresume(self.move_anim))
+ if costatus(
+  self.move_anim
+ )=="dead" then
   self.pos=self.nxt_pos
-  self:set_next_pos()
+  self.dir=self.nxt_dir
+  self:choose_next_dest()
  end
 end
 
 function bot:draw()
- local si=4*((self.dir-1)%2)
- if self.dir>2 then
+ local si=self.rot%8
+ if self.rot>7 then
   --invert rear/front lights
   pal(8,10)
   pal(10,8)
@@ -256,7 +375,10 @@ function bot:draw()
   self.pos
  )
  spr(
-  96+si*2,pos.x-1,pos.y-1,2,2
+  96+si*2,
+  pos.x-1+self.dx,
+  pos.y-1+self.dy,
+  2,2
  )
  pal()
 end
