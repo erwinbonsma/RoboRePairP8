@@ -243,37 +243,25 @@ end
 function move_turn(bot,dr1,dr2)
  return function()
   local o=orientation(dr1,dr2)
-  local delta=ceil(tilesize/2)
-  local ssteps=2
 
   --initial straight bit
-  for i=1,ssteps do
+  for i=1,3 do
    bot.dx+=dr1.x
    bot.dy+=dr1.y
    yield()
   end
 
-  --half-turn
-  for i=1,2 do
+  --move diagonally and turn
+  for i=1,3 do
    bot.rot=(bot.rot+16+o)%16
-   yield()
-  end
-
-  --move diagonally
-  for i=1,delta-2*ssteps do
    bot.dx+=dr1.x+dr2.x
    bot.dy+=dr1.y+dr2.y
    yield()
   end
 
-  --complete-turn
-  for i=1,2 do
-   bot.rot=(bot.rot+16+o)%16
-   yield()
-  end
-
   --final straight bit
-  for i=1,ssteps do
+  bot.rot=(bot.rot+16+o)%16
+  for i=1,3 do
    bot.dx+=dr2.x
    bot.dy+=dr2.y
    yield()
@@ -285,7 +273,7 @@ function bot:new(pos,o)
  o=setmetatable(o or {},self)
  self.__index=self
 
- o.period=15
+ o.period=5
 
  --coarse grid movement
  o.pos=pos
@@ -302,8 +290,6 @@ function bot:new(pos,o)
 end
 
 function bot:switch_move_anim()
- printh("start switch_anim")
-
  local entry=opposite(self.dir)
  local vdir=vdirs[entry]
  local delta=flr(tilesize/2)
@@ -335,7 +321,6 @@ function bot:switch_move_anim()
    )
   )
  end
- printh("end switch_anim")
 end
 
 function bot:choose_next_dest()
@@ -354,6 +339,11 @@ function bot:choose_next_dest()
 end
 
 function bot:update()
+ self.clk=(self.clk+1)%self.period
+ if self.clk>0 then
+  return
+ end
+ 
  assert(coresume(self.move_anim))
  if costatus(
   self.move_anim
