@@ -13,7 +13,7 @@ vector={
 }
 
 function new_vector(x,y)
- v={x=x,y=y}
+ local v={x=x,y=y}
  setmetatable(v,vector)
  return v
 end
@@ -154,9 +154,9 @@ tiles={
 
 -->8
 --grid
-grid={}
+tilegrid={}
 
-function grid:new(o)
+function tilegrid:new(o)
  o=setmetatable(o or {},self)
  self.__index=self
 
@@ -166,7 +166,7 @@ function grid:new(o)
  return o
 end
 
-function grid:tile_at(pos)
+function tilegrid:tile_at(pos)
  local idx=mget(pos.x,pos.y)
  if idx>0 then
   return tiles[idx-15]
@@ -175,14 +175,14 @@ function grid:tile_at(pos)
  end
 end
 
-function grid:screen_pos(pos)
+function tilegrid:screen_pos(pos)
  return new_vector(
   pos.x*tilesize+5,
   pos.y*tilesize+18
  )
 end
 
-function grid:draw()
+function tilegrid:draw()
  for x=0,self.w-1 do
   for y=0,self.h-1 do
    local m=mget(x,y)
@@ -195,7 +195,6 @@ function grid:draw()
      new_vector(x,y)
     )
     spr(si,pos.x,pos.y,2,2)
-		  pal()
    end
   end
  end
@@ -327,7 +326,6 @@ function bot:choose_next_dest()
  local tile=grid:tile_at(
   self.pos
  )
- tile:dump()
  self.nxt_dir=rnd_item_from(
   tile:exits_from(
    opposite(self.dir)
@@ -379,7 +377,7 @@ end
 function _init()
  printh("---- init ----")
 
- grid=grid:new()
+ grid=tilegrid:new()
  bot1=bot:new(
   new_vector(0,6)
  )
