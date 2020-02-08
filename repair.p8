@@ -1,17 +1,20 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
-function new_vector(x,y)
- v={}
- v.x=x
- v.y=y
- return v
-end
+vector={
+ __add=function(a,b)
+  return new_vector(
+   a.x+b.x,a.y+b.y
+  )
+ end,
+ to_string=function(v)
+  return "("..v.x..","..v.y..")"
+ end
+}
 
-function vector_sum(v1,v2)
- v={}
- v.x=v1.x+v2.x
- v.y=v1.y+v2.y
+function new_vector(x,y)
+ v={x=x,y=y}
+ setmetatable(v,vector)
  return v
 end
 
@@ -204,9 +207,8 @@ function bot:set_next_pos()
    opposite(self.dir)
   )
  )
- self.nxt_pos=vector_sum(
-  self.pos,vdirs[self.nxt_dir]
- )
+ self.nxt_pos=
+  self.pos+vdirs[self.nxt_dir]
 end
 
 function bot:new(pos,o)
