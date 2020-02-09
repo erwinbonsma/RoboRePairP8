@@ -1,36 +1,76 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
-vector={
- __add=function(a,b)
-  return new_vector(
-   a.x+b.x,a.y+b.y
-  )
- end,
- to_string=function(v)
-  return "("..v.x..","..v.y..")"
- end
-}
 
-function new_vector(x,y)
- local v={x=x,y=y}
- setmetatable(v,vector)
- return v
+vector={}
+
+function vector:new(x,y)
+ o=setmetatable({},self)
+ self.__index=self
+
+ o.x=x
+ o.y=y
+
+ return o
 end
 
-function vector2str(v)
- return "("..v.x..","..v.y..")"
+function vector:__add(v)
+ return vector:new(
+  self.x+v.x,self.y+v.y
+ )
 end
 
-function orientation(v1,v2)
- local val=v1.y*v2.x-v1.x*v2.y
+function vector:__mul(f)
+ return vector:new(
+  self.x*f,self.y*f
+ )
+end
+
+function vector:add(v)
+ self.x+=v.x
+ self.y+=v.y
+end
+
+function vector:sub(v)
+ self.x-=v.x
+ self.y-=v.y
+end
+
+function vector:to_string()
+ return "("..self.x..","..self.y..")"
+end
+
+function vector:orientation(vref)
+ local val=(
+  self.y*vref.x-self.x*vref.y
+ )
  if val==0 then
   return 0  --co-linear
- elseif val<0 then
+ elseif val>0 then
   return 1  --clockwise
  else
   return -1 --counter-clockwise
  end
+end
+
+dirs={1,2,3,4}
+vdirs={
+ vector:new(0,-1),
+ vector:new(1,0),
+ vector:new(0,1),
+ vector:new(-1,0)
+}
+
+function clkwise(dr)
+ return 1+dr%4
+end
+
+function cclkwise(dr)
+ return 1+(dr+2)%4
+end
+
+function opposite(dr)
+ return 1+(dr+1)%4
 end
 
 function dump_list(l)
@@ -45,26 +85,6 @@ function dump_list(l)
  end
  s=s.."]"
  printh(s)
-end
-
-dirs={1,2,3,4}
-vdirs={
- new_vector(0,-1),
- new_vector(1,0),
- new_vector(0,1),
- new_vector(-1,0)
-}
-
-function clkwise(dr)
- return 1+dr%4
-end
-
-function cclkwise(dr)
- return 1+(dr+2)%4
-end
-
-function opposite(dr)
- return 1+(dr+1)%4
 end
 
 function rnd_item_from(l)
@@ -163,11 +183,21 @@ function tilegrid:new(o)
  o.w=9
  o.h=7
 
+ o.positions={}
+ for x=0,o.w-1 do
+  for y=0,o.h-1 do
+   add(
+    o.positions,vector:new(x,y)
+   )
+  end
+ end
+
  return o
 end
 
 function tilegrid:tile_at(pos)
  local idx=mget(pos.x,pos.y)
+ printh(pos:to_string())
  if idx>0 then
   return tiles[idx-15]
  else
@@ -176,7 +206,7 @@ function tilegrid:tile_at(pos)
 end
 
 function tilegrid:screen_pos(pos)
- return new_vector(
+ return vector:new(
   pos.x*tilesize+5,
   pos.y*tilesize+18
  )
@@ -188,20 +218,15 @@ function tilegrid:draw()
  pal(10,9)
  pal(9,4)
 
- for x=0,self.w-1 do
-  for y=0,self.h-1 do
-   local m=mget(x,y)
-   if m>0 then
-    local si=128+(m-16)*2
-    if m>=24 then
-     si+=16
-    end
-    local pos=self:screen_pos(
-     new_vector(x,y)
-    )
-
-    spr(si,pos.x,pos.y,2,2)
+ for p in all(self.positions) do
+  local m=mget(p.x,p.y)
+  if m>0 then
+   local si=128+(m-16)*2
+   if m>=24 then
+    si+=16
    end
+   local pos=self:screen_pos(p)
+   spr(si,pos.x,pos.y,2,2)
   end
  end
 
@@ -214,8 +239,7 @@ bot={}
 function move_straight(bot,dr)
  return function()
   for i=1,tilesize do
-   bot.dx+=dr.x
-   bot.dy+=dr.y
+   bot.dirv:add(dr)
    yield()
   end
  end
@@ -227,8 +251,7 @@ function move_reverse(bot,dr)
 
   --move halfway
   for i=1,delta do
-   bot.dx+=dr.x
-   bot.dy+=dr.y
+   bot.dirv:add(dr)
    yield()
   end
 
@@ -240,8 +263,7 @@ function move_reverse(bot,dr)
 
   --move back
   for i=1,delta do
-   bot.dx-=dr.x
-   bot.dy-=dr.y
+   bot.dirv:sub(dr)
    yield()
   end
  end
@@ -249,28 +271,26 @@ end
 
 function move_turn(bot,dr1,dr2)
  return function()
-  local o=orientation(dr1,dr2)
+  local o=dr2:orientation(dr1)
 
   --initial straight bit
   for i=1,3 do
-   bot.dx+=dr1.x
-   bot.dy+=dr1.y
+   bot.dirv:add(dr1)
    yield()
   end
 
   --move diagonally and turn
   for i=1,3 do
    bot.rot=(bot.rot+16+o)%16
-   bot.dx+=dr1.x+dr2.x
-   bot.dy+=dr1.y+dr2.y
+   bot.dirv:add(dr1)
+   bot.dirv:add(dr2)
    yield()
   end
 
   --final straight bit
   bot.rot=(bot.rot+16+o)%16
   for i=1,3 do
-   bot.dx+=dr2.x
-   bot.dy+=dr2.y
+   bot.dirv:add(dr2)
    yield()
   end
  end
@@ -298,12 +318,11 @@ end
 
 function bot:switch_move_anim()
  local entry=opposite(self.dir)
- local vdir=vdirs[entry]
+ local dirv=vdirs[entry]
  local delta=flr(tilesize/2)
 
  -- fine-grained drawing state
- self.dx=vdir.x*delta
- self.dy=vdir.y*delta
+ self.dirv=dirv*delta
  self.rot=(self.dir-1)*4
  if self.dir==self.nxt_dir then
   self.move_anim=cocreate(
@@ -372,8 +391,8 @@ function bot:draw()
  )
  spr(
   64+si*2,
-  pos.x-1+self.dx,
-  pos.y-1+self.dy,
+  pos.x-1+self.dirv.x,
+  pos.y-1+self.dirv.y,
   2,2
  )
  pal()
@@ -386,9 +405,7 @@ function _init()
  printh("---- init ----")
 
  grid=tilegrid:new()
- bot1=bot:new(
-  new_vector(0,6)
- )
+ bot1=bot:new(vector:new(0,6))
 end
 
 function _update()
