@@ -220,19 +220,6 @@ function rnd_tile_from(tiles)
  assert(false)
 end
 
-function gridtile:draw(pos)
- local si=128+self.idx*2
- if self.idx>=8 then
-  si+=16
- end
- spr(
-  si,
-  flr(pos.x+0.5),
-  flr(pos.y+0.5)
-  ,2,2
- )
-end
-
 tiles={
  gridtile:new( 0,{ 0, 0, 0, 0},0),
  gridtile:new( 1,{ 1, 0, 0, 0},1),
@@ -252,12 +239,52 @@ tiles={
  gridtile:new(15,{ 4, 8, 1, 2},2)
 }
 
+function draw_tile(
+ tile,screen_pos
+)
+ local si=128+tile.idx*2
+ if tile.idx>=8 then
+  si+=16
+ end
+
+ spr(
+  si,
+  flr(screen_pos.x+0.5),
+  flr(screen_pos.y+0.5)
+  ,2,2
+ )
+end
+
+screentile={}
+
+function screentile:new(
+ tile,screen_pos,target_pos
+)
+ local o=setmetatable({},self)
+ self.__index=self
+
+ o.tile=tile
+ o.pos=screen_pos
+ o.target_pos=target_pos
+
+ return o
+end
+
+function screentile:update()
+ self.pos:lerp(
+  self.target_pos,0.2
+ )
+end
+
+function screentile:draw()
+ draw_tile(self.tile,self.pos)
+end
 -->8
 --grid
 tilegrid={}
 
-function tilegrid:new(o)
- o=setmetatable(o or {},self)
+function tilegrid:new()
+ local o=setmetatable({},self)
  self.__index=self
 
  o.w=9
@@ -272,9 +299,10 @@ function tilegrid:new(o)
 
    local tile_idx=mget(x,y)
    if tile_idx>0 then
-    o.tiles[
-     o:_pos2idx(pos)
-    ]=tiles[tile_idx-15]
+    local t=tiles[tile_idx-15]
+    tilegrid.place_tile(
+     o,t,pos,true
+    )
    end
   end
  end
@@ -297,9 +325,14 @@ function tilegrid:tile_at(pos)
   pos.x>=0 and pos.x<self.w and
   pos.y>=0 and pos.y<self.h
  ) then
-  return self.tiles[
+  local screen_tile=self.tiles[
    self:_pos2idx(pos)
   ]
+  if screen_tile!=nil then
+   return screen_tile.tile
+  else
+   return nil
+  end
  else
   --return the empty tile. this
   --prevents connections off the
@@ -363,25 +396,52 @@ function tilegrid:is_placeable(
  return false
 end
 
-function tilegrid:place_tile(
- tile,pos
+function tilegrid:place_screentile(
+ tile,pos,force
 )
- assert(self:can_place_tile(
-  tile,pos
- ))
+ assert(
+  force or
+  self:can_place_tile(
+   tile.tile,pos
+  )
+ )
+
+ tile.target_pos=
+  self:screen_pos(pos)
+ if tile.pos==nil then
+  tile.pos=vector:new(
+   tile.target_pos.x,
+   tile.target_pos.y
+  )
+ end
+
  self.tiles[
   self:_pos2idx(pos)
  ]=tile
+end
+
+function tilegrid:place_tile(
+ tile,pos,force
+)
+ self:place_screentile(
+  screentile:new(tile),
+  pos,
+  force
+ )
+end
+
+function tilegrid:update()
+ for k,v in pairs(self.tiles) do
+  v:update()
+ end
 end
 
 function tilegrid:draw()
  -- switch to dark mode
  setpal(1)
 
- for i,t in pairs(self.tiles) do
-  t:draw(self:screen_pos(
-   self:_idx2pos(i)
-  ))
+ for k,v in pairs(self.tiles) do
+  v:draw()
  end
 
  pal()
@@ -572,8 +632,8 @@ function tiletray:new(size)
  o.tiles={}
  o.num_tiles=0
  while (o.num_tiles<size) do
-	 tiletray.replenish(o)
-	end
+  tiletray._replenish(o)
+ end
 
  return o
 end
@@ -622,8 +682,10 @@ function tiletray:switch()
  self:_update_target_pos()
 end
 
-function tiletray:pop()
+function tiletray:_pop()
  assert(self.num_tiles>0)
+
+ local popped=self.tiles[1]
 
  for i=1,self.num_tiles-1 do
   self.tiles[i]=self.tiles[i+1]
@@ -632,9 +694,11 @@ function tiletray:pop()
  self.tiles[self.num_tiles]=nil
  self.num_tiles-=1
  self:_update_target_pos()
+
+ return popped
 end
 
-function tiletray:replenish()
+function tiletray:_replenish()
  assert(self.num_tiles<self.size)
 
  local tile=self:_new_tile()
@@ -646,31 +710,44 @@ function tiletray:replenish()
   self.tiles[i+1]=self.tiles[i]
  end
 
- self.tiles[1]={
-  tile=tile,
-  pos=vector:new(
-   self.x0,-tilesize
-  )
- }
+ self.tiles[1]=screentile:new(
+  tile,
+  vector:new(self.x0,-tilesize)
+ )
  self.num_tiles+=1
  self:_update_target_pos()
 end
 
+function tiletray:place_tile(
+ pos
+)
+ grid:place_screentile(
+  self:_pop(),pos
+ )
+ self:_replenish()
+end
+
 function tiletray:selected_tile()
- return self.tiles[1].tile
+ if self.num_tiles==0 then
+  return nil
+ else
+  return self.tiles[1].tile
+ end
 end
 
 function tiletray:update()
- for t in all(self.tiles) do
-  t.pos:lerp(t.target_pos,0.2)
- end
+ foreach(
+  self.tiles,
+  screentile.update
+ )
 end
 
 function tiletray:draw()
  setpal(1)
- for t in all(self.tiles) do
-  t.tile:draw(t.pos)
- end
+ foreach(
+  self.tiles,
+  screentile.draw
+ )
  pal()
 end
 -->8
@@ -730,14 +807,8 @@ function gridcursor:update()
 
  if btnp(❎) then
   if self.allowed then
-   grid:place_tile(
-    tray:selected_tile(),
-    self.pos
-   )
-   tray:pop()
-   tray:replenish()
+   tray:place_tile(self.pos)
    self.allowed=false
-   --todo: place sound+anim
   else
    --todo: nocando sound
   end
@@ -754,9 +825,10 @@ function gridcursor:draw()
   else
    setpal(3)
   end
-  tray:selected_tile():draw(
-   pos
-  )
+  local t=tray:selected_tile()
+  if t!=nil then
+   draw_tile(t,pos)
+  end
  end
 
  spr(
@@ -795,6 +867,7 @@ end
 
 function _update()
  bot1:update()
+ grid:update()
  curs:update()
  tray:update()
 end
@@ -921,7 +994,7 @@ aaa9333339aaa000aaa9111119aaa000bbbd11111dbbb000999b33333b9990009994333334999000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000677611494117777000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000666600000007777000000000000000000000000000000000
 __map__
-36161c0000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00161c0000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 161d171c00000000150000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 15131f1d00000000150000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 1500131d00000000150000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
