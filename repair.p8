@@ -268,6 +268,10 @@ end
 function tilegrid:can_place_tile(
  tile,pos
 )
+ if tile==nil then
+  return false
+ end
+
  if self:tile_at(pos)!=nil then
   return false
  end
@@ -496,21 +500,59 @@ function tiletray:new(size)
  local o=setmetatable({},self)
  self.__index=self
 
-	self:refresh()
+ o.size=size
+ o.tiles={}
+ o.num_tiles=0
+ while (o.num_tiles<size) do
+	 tiletray.replenish(o)
+	end
 
  return o
 end
 
-function tiletray:refresh()
- self.tile=rnd_tile_from(tiles)
+function tiletray:switch()
+ assert(self.num_tiles>=2)
+
+ local tmp=self.tiles[1]
+ for i=1,self.num_tiles-1 do
+  self.tiles[i]=self.tiles[i+1]
+ end
+ self.tiles[self.num_tiles]=tmp
+end
+
+function tiletray:pop()
+ assert(self.num_tiles>0)
+
+ for i=1,self.num_tiles-1 do
+  self.tiles[i]=self.tiles[i+1]
+ end
+
+ self.tiles[self.num_tiles]=nil
+ self.num_tiles-=1
+end
+
+function tiletray:replenish()
+ assert(self.num_tiles<self.size)
+
+ for i=self.num_tiles,1,-1 do
+  self.tiles[i+1]=self.tiles[i]
+ end
+
+ local tile=rnd_tile_from(tiles)
+ self.tiles[1]=tile
+ self.num_tiles+=1
 end
 
 function tiletray:selected_tile()
- return self.tile
+ return self.tiles[1]
 end
 
 function tiletray:draw()
- self.tile:draw(vector:new(0,0))
+ for i=1,self.num_tiles do
+  self.tiles[i]:draw(
+   vector:new(i*15,0)
+  )
+ end
 end
 -->8
 --cursor
@@ -558,13 +600,25 @@ function gridcursor:update()
   self:_update_status()
  end
 
+ if btnp(🅾️) then
+  if tray.num_tiles>=2 then
+   tray:switch()
+   self:_update_status()
+  else
+   --todo: nocando sound   
+  end
+ end
+
  if btnp(❎) then
   if self.allowed then
    grid:place_tile(
     tray:selected_tile(),
     self.pos
    )
-   tray:refresh()
+   tray:pop()
+   tray:replenish()
+   self.allowed=false
+   --todo: place sound+anim
   else
    --todo: nocando sound
   end
@@ -610,7 +664,7 @@ function _init()
 
  grid=tilegrid:new()
  bot1=bot:new(vector:new(0,6))
- tray=tiletray:new()
+ tray=tiletray:new(3)
  curs=gridcursor:new(
   vector:new(4,3)
  )
