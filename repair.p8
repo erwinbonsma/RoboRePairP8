@@ -160,6 +160,10 @@ function gridtile:dump()
 end
 
 function rnd_tile_from(tiles)
+ if #tiles==0 then
+  return nil
+ end
+
  local sum=0
  for tile in all(tiles) do
   sum+=tile.prob
@@ -298,6 +302,19 @@ function tilegrid:can_place_tile(
  end
 
  return connects
+end
+
+function tilegrid:is_placeable(
+ tile
+)
+ for p in all(self.positions) do
+  if self:can_place_tile(
+   tile,p
+  ) then
+   return true
+  end
+ end
+ return false
 end
 
 function tilegrid:place_tile(
@@ -531,14 +548,41 @@ function tiletray:pop()
  self.num_tiles-=1
 end
 
+function tiletray:_has_tile(tile)
+ for t in all(self.tiles) do
+  if t==tile then
+   return true
+  end
+ end
+ return false
+end
+
+function tiletray:_new_tile()
+ local l={}
+ for t in all(tiles) do
+  if (
+   t.prob>0 and
+   not self:_has_tile(t) and
+   grid:is_placeable(t)
+  ) then
+   add(l,t)
+  end
+ end
+ return rnd_tile_from(l)
+end
+
 function tiletray:replenish()
  assert(self.num_tiles<self.size)
+
+ local tile=self:_new_tile()
+ if tile==nil then
+  return
+ end
 
  for i=self.num_tiles,1,-1 do
   self.tiles[i+1]=self.tiles[i]
  end
 
- local tile=rnd_tile_from(tiles)
  self.tiles[1]=tile
  self.num_tiles+=1
 end
@@ -605,7 +649,7 @@ function gridcursor:update()
    tray:switch()
    self:_update_status()
   else
-   --todo: nocando sound   
+   --todo: nocando sound
   end
  end
 
