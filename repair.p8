@@ -546,7 +546,7 @@ end
 
 function tiletray:_has_tile(tile)
  for t in all(self.tiles) do
-  if t==tile then
+  if t.tile==tile then
    return true
   end
  end
