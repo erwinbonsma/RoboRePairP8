@@ -118,8 +118,8 @@ col_pals={
   16* 3,
   16* 4,
   16* 5,
-  16* 9+5,
-  16*10+5,
+  16* 9+6,
+  16*10+6,
   16*13,
   16*14}
 }
@@ -127,7 +127,12 @@ function setpal(pal_idx)
  for v in all(
   col_pals[pal_idx]
  ) do
-  pal(shr(v,4),band(v,15))
+  local dst=band(v,15)
+  if dst>0 then
+   pal(shr(v,4),band(v,15))
+  else
+   palt(shr(v,4),true)
+  end
  end
 end
 
@@ -344,7 +349,7 @@ end
 function tilegrid:screen_pos(pos)
  return vector:new(
   pos.x*tilesize+5,
-  pos.y*tilesize+18
+  pos.y*tilesize+22
  )
 end
 
@@ -629,6 +634,10 @@ function tiletray:new(size)
  )
  o.x0=63-flr(w/2)
 
+ o.cursor_pos=vector:new(
+  o.x0,1
+ )
+
  o.tiles={}
  o.num_tiles=0
  while (o.num_tiles<size) do
@@ -665,7 +674,7 @@ function tiletray:_update_target_pos()
  local mul=tilesize+self.xsep
  for i,t in pairs(self.tiles) do
   t.target_pos=vector:new(
-   self.x0+(i-1)*mul,0
+   self.x0+(i-1)*mul,1
   )
  end
 end
@@ -749,6 +758,10 @@ function tiletray:draw()
   screentile.draw
  )
  pal()
+
+ if #self.tiles>0 then
+  draw_cursor(self.cursor_pos)
+ end
 end
 -->8
 --cursor
@@ -760,6 +773,8 @@ function gridcursor:new(pos)
  self.__index=self
 
  o.pos=pos
+ o.contraction=0
+ o.contraction_clk=0
  gridcursor._update_status(o)
 
  return o
@@ -809,46 +824,66 @@ function gridcursor:update()
   if self.allowed then
    tray:place_tile(self.pos)
    self.allowed=false
+   self.contraction_clk=20
   else
    --todo: nocando sound
   end
  end
+
+ if self.contraction_clk>0 then
+  self.contraction_clk-=1
+  self.contraction=(
+   0.5-0.5*cos(
+    self.contraction_clk/20
+   )
+  )
+ end
+end
+
+function draw_cursor(
+ pos,contraction
+)
+ local d=0
+ if contraction!=nil then
+  d=flr(contraction*4+0.5)
+ end
+ spr(
+  9,pos.x+d,pos.y+d
+ )
+ spr(
+  9,pos.x+5-d,pos.y+d,
+  1,1,true
+ )
+ spr(
+  9,pos.x+d,pos.y+5-d,
+  1,1,false,true
+ )
+ spr(
+  9,pos.x+5-d,pos.y+5-d,
+  1,1,true,true
+ )
 end
 
 function gridcursor:draw()
  local pos=grid:screen_pos(
   self.pos
  )
- if grid:tile_at(self.pos)==nil then
+
+ if self.contraction==0 then
   if self.allowed then
    setpal(2)
   else
    setpal(3)
   end
-  local t=tray:selected_tile()
-  if t!=nil then
-   draw_tile(t,pos)
-  end
+  draw_tile(
+   tray:selected_tile(),pos
+  )
+  pal()
  end
 
- spr(
-  9,pos.x-1,pos.y-1
+ draw_cursor(
+  pos,self.contraction
  )
- spr(
-  9,pos.x+6,pos.y-1,1,1,true
- )
- spr(
-  9,pos.x-1,pos.y+6,1,1,false,true
- )
- spr(
-  9,pos.x+6,pos.y+6,1,1,true,true
- )
-
- pal()
-end
-
-function gridcursor:to_string()
- return "cursor="..self.pos:to_string()
 end
 
 -->8
@@ -882,10 +917,10 @@ function _draw()
 end
 
 __gfx__
-000000000000000000c00000000c00000000c0000000000000c00000000c00000000c00077770000000000000000000000000000000000000000000000000000
-000000000caaac0000caa00000cca00000cca0000ccccc00008cc000008cc0000088c00077770000000000000000000000000000000000000000000000000000
-007007000ccccc000ccccac00cccca00ccccca0008ccca0008ccccc008cccc00c8cccc0077000000000000000000000000000000000000000000000000000000
-000770000ccccc000ccccc00ccccccc008ccca0008ccca0008ccca00ccccccc00ccccc0077000000000000000000000000000000000000000000000000000000
+000000000000000000c00000000c00000000c0000000000000c00000000c00000000c00066600000000000000000000000000000000000000000000000000000
+000000000caaac0000caa00000cca00000cca0000ccccc00008cc000008cc0000088c00060000000000000000000000000000000000000000000000000000000
+007007000ccccc000ccccac00cccca00ccccca0008ccca0008ccccc008cccc00c8cccc0060000000000000000000000000000000000000000000000000000000
+000770000ccccc000ccccc00ccccccc008ccca0008ccca0008ccca00ccccccc00ccccc0000000000000000000000000000000000000000000000000000000000
 000770000ccccc00c8cccc0008cccc0008ccccc008ccca00ccccca000cccca000ccccac000000000000000000000000000000000000000000000000000000000
 007007000c888c000088c000008cc000008cc0000ccccc0000cca00000cca00000caa00000000000000000000000000000000000000000000000000000000000
 00000000000000000000c000000c000000c00000000000000000c000000c000000c0000000000000000000000000000000000000000000000000000000000000
