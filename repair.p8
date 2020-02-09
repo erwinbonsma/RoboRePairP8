@@ -36,6 +36,11 @@ function vector:sub(v)
  self.y-=v.y
 end
 
+function vector:lerp(v,f)
+ self.x=(1-f)*self.x+f*v.x
+ self.y=(1-f)*self.y+f*v.y
+end
+
 function vector:to_string()
  return "("..self.x..","..self.y..")"
 end
@@ -184,7 +189,12 @@ function gridtile:draw(pos)
  if self.idx>=8 then
   si+=16
  end
- spr(si,pos.x,pos.y,2,2)
+ spr(
+  si,
+  flr(pos.x+0.5),
+  flr(pos.y+0.5)
+  ,2,2
+ )
 end
 
 tiles={
@@ -518,6 +528,13 @@ function tiletray:new(size)
  self.__index=self
 
  o.size=size
+
+ o.xsep=2
+ local w=(
+  size*tilesize+(size-1)*o.xsep
+ )
+ o.x0=63-flr(w/2)
+
  o.tiles={}
  o.num_tiles=0
  while (o.num_tiles<size) do
@@ -525,27 +542,6 @@ function tiletray:new(size)
 	end
 
  return o
-end
-
-function tiletray:switch()
- assert(self.num_tiles>=2)
-
- local tmp=self.tiles[1]
- for i=1,self.num_tiles-1 do
-  self.tiles[i]=self.tiles[i+1]
- end
- self.tiles[self.num_tiles]=tmp
-end
-
-function tiletray:pop()
- assert(self.num_tiles>0)
-
- for i=1,self.num_tiles-1 do
-  self.tiles[i]=self.tiles[i+1]
- end
-
- self.tiles[self.num_tiles]=nil
- self.num_tiles-=1
 end
 
 function tiletray:_has_tile(tile)
@@ -571,6 +567,39 @@ function tiletray:_new_tile()
  return rnd_tile_from(l)
 end
 
+function tiletray:_update_target_pos()
+ local mul=tilesize+self.xsep
+ for i,t in pairs(self.tiles) do
+  t.target_pos=vector:new(
+   self.x0+(i-1)*mul,0
+  )
+ end
+end
+
+function tiletray:switch()
+ assert(self.num_tiles>=2)
+
+ local tmp=self.tiles[1]
+ for i=1,self.num_tiles-1 do
+  self.tiles[i]=self.tiles[i+1]
+ end
+ self.tiles[self.num_tiles]=tmp
+
+ self:_update_target_pos()
+end
+
+function tiletray:pop()
+ assert(self.num_tiles>0)
+
+ for i=1,self.num_tiles-1 do
+  self.tiles[i]=self.tiles[i+1]
+ end
+
+ self.tiles[self.num_tiles]=nil
+ self.num_tiles-=1
+ self:_update_target_pos()
+end
+
 function tiletray:replenish()
  assert(self.num_tiles<self.size)
 
@@ -583,19 +612,29 @@ function tiletray:replenish()
   self.tiles[i+1]=self.tiles[i]
  end
 
- self.tiles[1]=tile
+ self.tiles[1]={
+  tile=tile,
+  pos=vector:new(
+   self.x0,-tilesize
+  )
+ }
  self.num_tiles+=1
+ self:_update_target_pos()
 end
 
 function tiletray:selected_tile()
- return self.tiles[1]
+ return self.tiles[1].tile
+end
+
+function tiletray:update()
+ for t in all(self.tiles) do
+  t.pos:lerp(t.target_pos,0.2)
+ end
 end
 
 function tiletray:draw()
- for i=1,self.num_tiles do
-  self.tiles[i]:draw(
-   vector:new(i*15,0)
-  )
+ for t in all(self.tiles) do
+  t.tile:draw(t.pos)
  end
 end
 -->8
@@ -717,6 +756,7 @@ end
 function _update()
  bot1:update()
  curs:update()
+ tray:update()
 end
 
 function _draw()
