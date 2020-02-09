@@ -183,6 +183,11 @@ function tilegrid:screen_pos(pos)
 end
 
 function tilegrid:draw()
+ -- switch to dark mode
+ pal(3,1)
+ pal(10,9)
+ pal(9,4)
+
  for x=0,self.w-1 do
   for y=0,self.h-1 do
    local m=mget(x,y)
@@ -194,10 +199,13 @@ function tilegrid:draw()
     local pos=self:screen_pos(
      new_vector(x,y)
     )
+
     spr(si,pos.x,pos.y,2,2)
    end
   end
  end
+
+ pal()
 end
 -->8
 -- bot
