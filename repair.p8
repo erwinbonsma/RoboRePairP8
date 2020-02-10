@@ -349,6 +349,17 @@ function tilegrid:_idx2pos(idx)
  )
 end
 
+function tilegrid:screentile_at(
+ pos
+)
+ if self:contains(pos) then
+  return self.tiles[
+   self:_pos2idx(pos)
+  ]
+ end
+ return nil
+end
+
 function tilegrid:contains(pos)
  return (
   pos.x>=0 and pos.x<self.w and
@@ -366,6 +377,29 @@ function tilegrid:has_neighbour(
   end
  end
  return false
+end
+
+--ensure the tile connects to
+--its neighbours (again)
+function tilegrid:patch_tile(
+ pos
+)
+ local idx=1
+ for dr in all(dirs) do
+  local nt=self:screentile_at(
+   pos+vdirs[dr]
+  )
+  if (
+   nt!=nil and
+   nt.tile:has_entry(
+    opposite(dr)
+   )
+  ) then
+   idx+=shl(1,dr-1)
+  end
+ end
+ local t=self:screentile_at(pos)
+ t.tile=tiles[idx]
 end
 
 function tilegrid:tile_at(pos)
@@ -1032,7 +1066,6 @@ function update_game()
  end
 
  if end_anim!=nil then
-  printh("invoking endanim")
   if coinvoke(end_anim) then
    end_anim=nil
   end
@@ -1089,36 +1122,45 @@ function game_over_anim()
   end
  end
 
+ local place_tile=function(pos)
+  local tile_idx=mget(
+   pos.x+12,pos.y+16
+  )
+  if tile_idx!=0 then
+   tile_idx-=15
+  else
+   tile_idx=1
+  end
+  local tile=tiles[tile_idx]
+  grid:place_tile(
+   screentile:new(tile),pos,true
+  )
+ end
+
+ local update_tile=function(pos)
+  local i=grid:_pos2idx(pos)+1
+  local status=tile_status[i]
+  if status==0 then
+   tile_status[i]=1
+   add(ready,i)
+  elseif status==1 then
+   grid:patch_tile(pos)
+  end
+ end
+
  return function()
   while #ready>0 do
    local i=rnd_item_from(ready)
-   local p=grid:_idx2pos(i-1)
-   local tile_idx=mget(
-    p.x+12,p.y+16
-   )
-   if tile_idx!=0 then
-    tile_idx-=15
-   else
-    tile_idx=1
-   end
-   local t=tiles[tile_idx]
-   grid:place_tile(
-    screentile:new(t),p,true
-   )
    del(ready,i)
+   --printh("popped "..i)
+   local p=grid:_idx2pos(i-1)
+   place_tile(p)
    tile_status[i]=2
 
    for dr in all(dirs) do
     local np=p+vdirs[dr]
     if grid:contains(np) then
-     local ni=grid:_pos2idx(np)+1
-     local st=tile_status[ni]
-     if st==0 then
-      tile_status[ni]=1
-      add(ready,ni)
-     elseif st==1 then
-      --todo: toggle neighbours
-     end
+     update_tile(np)
     end
    end
    yield()
