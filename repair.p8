@@ -305,8 +305,11 @@ function tilegrid:new()
    local tile_idx=mget(x,y)
    if tile_idx>0 then
     local t=tiles[tile_idx-15]
+    local scr_t=screentile:new(
+     t,vector:new(64,64)
+    )
     tilegrid.place_tile(
-     o,t,pos,true
+     o,scr_t,pos,true
     )
    end
   end
@@ -401,38 +404,28 @@ function tilegrid:is_placeable(
  return false
 end
 
-function tilegrid:place_screentile(
- tile,pos,force
+function tilegrid:place_tile(
+ screen_tile,pos,force
 )
  assert(
   force or
   self:can_place_tile(
-   tile.tile,pos
+   screen_tile.tile,pos
   )
  )
 
- tile.target_pos=
+ screen_tile.target_pos=
   self:screen_pos(pos)
- if tile.pos==nil then
-  tile.pos=vector:new(
-   tile.target_pos.x,
-   tile.target_pos.y
+ if screen_tile.pos==nil then
+  screen_tile.pos=vector:new(
+   screen_tile.target_pos.x,
+   screen_tile.target_pos.y
   )
  end
 
  self.tiles[
   self:_pos2idx(pos)
- ]=tile
-end
-
-function tilegrid:place_tile(
- tile,pos,force
-)
- self:place_screentile(
-  screentile:new(tile),
-  pos,
-  force
- )
+ ]=screen_tile
 end
 
 function tilegrid:update()
@@ -731,7 +724,7 @@ end
 function tiletray:place_tile(
  pos
 )
- grid:place_screentile(
+ grid:place_tile(
   self:_pop(),pos
  )
  self:_replenish()
