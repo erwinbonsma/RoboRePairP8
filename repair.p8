@@ -26,6 +26,13 @@ function vector:__mul(f)
  )
 end
 
+function vector:__eq(v)
+ return (
+  self.x==v.x and
+  self.y==v.y
+ )
+end
+
 function vector:add(v)
  self.x+=v.x
  self.y+=v.y
@@ -560,7 +567,7 @@ function bot:new(pos,o)
  )
  o.nxt_pos=pos
  o.nxt_dir=opposite(entry)
- bot._handle_move(o,tile)
+ bot._move_step(o)
 
  o.on_move={}
  o.on_crash={}
@@ -583,14 +590,6 @@ function bot:_handle_crash()
 end
 
 function bot:_set_move_anim()
- local entry=opposite(self.dir)
- local dirv=vdirs[entry]
- local delta=flr(tilesize/2)
-
- -- fine-grained drawing state
- self.dirv=dirv*delta
- self.rot=(self.dir-1)*4
-
  if self.dir==self.nxt_dir then
   self.update_cr=cocreate(
    move_straight(self)
@@ -611,9 +610,6 @@ end
 function bot:_handle_move(
  tile
 )
- self.pos=self.nxt_pos
- self.dir=self.nxt_dir
-
  --select next destination
  self.nxt_dir=rnd_item_from(
   tile:exits_from(
@@ -628,11 +624,19 @@ function bot:_handle_move(
 end
 
 function bot:_move_step()
- local tile=grid:tile_at(
-  self.nxt_pos
- )
- if tile!=nil then
-  self:_handle_move(tile)
+ self.pos=self.nxt_pos
+ self.dir=self.nxt_dir
+
+ --fine-grained drawing state
+ local entry=opposite(self.dir)
+ local dirv=vdirs[entry]
+ local delta=flr(tilesize/2)
+ self.dirv=dirv*delta
+ self.rot=(self.dir-1)*4
+
+ local t=grid:tile_at(self.pos)
+ if t!=nil then
+  self:_handle_move(t)
  else
   self:_handle_crash()
  end
@@ -888,7 +892,10 @@ function gridcursor:update()
  end
 
  if btnp(❎) then
-  if self.allowed then
+  if (
+   self.allowed and
+   not bot_at(self.pos)
+  ) then
    tray:place_tile(self.pos)
    self.allowed=false
    self.contraction_clk=20
@@ -1007,6 +1014,14 @@ function on_crash(bot)
  printh("bot crashed")
 end
 
+function bot_at(pos)
+ for bot in all(bots) do
+  if bot.pos==pos then
+   return true
+  end
+ end
+ return false
+end
 -->8
 -- main
 
