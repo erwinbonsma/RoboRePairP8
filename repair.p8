@@ -480,14 +480,30 @@ function tilegrid:screentile_at(
  return nil
 end
 
+function tilegrid:dump_claimed()
+ for p in all(self.positions) do
+  local t=self.tiles[
+   self:_pos2idx(p)
+  ]
+  if t.bot!=nil then
+   printh("  claimed: "..p:to_string())
+  end
+ end
+end
+
 function tilegrid:release_tile(
  pos,bot
 )
  local t=self.tiles[
   self:_pos2idx(pos)
  ]
+ printh("releasing "..pos:to_string())
+ if t.bot==nil then
+  printh("already nil")
+ end
  assert(t.bot==bot)
  t.bot=nil
+ self:dump_claimed()
 end
 
 function tilegrid:claim_tile(
@@ -500,7 +516,9 @@ function tilegrid:claim_tile(
   return false
  end
 
+ printh("claimed "..pos:to_string())
  t.bot=bot
+ self:dump_claimed()
  return true
 end
 
