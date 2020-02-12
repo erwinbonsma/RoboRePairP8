@@ -1503,6 +1503,11 @@ function draw_game()
  )
 end
 
+function disable_input()
+ curs=nil
+ tray=nil
+end
+
 function on_tile_placed(tray)
  score+=10
 end
@@ -1535,13 +1540,12 @@ function on_paired(bot1)
  bot1:stop()
  bot2:stop()
  score+=100
-
  switch_music(-1)
+ disable_input()
+
  end_anim=cowrap(
-  "end_game_anim-paired",
-  end_game_anim(
-   21,next_level
-  )
+  "level_done_anim",
+  level_done_anim
  )
 end
 
@@ -1558,19 +1562,16 @@ function on_death()
  for b in all(bots) do
   if b!=bot then b:stop() end
  end
+ disable_input()
 
  if numlives>0 then
   numlives-=1
   end_anim=cowrap(
-   "retry_anim",
-   retry_anim
+   "retry_anim",retry_anim
   )
  else
   end_anim=cowrap(
-   "end_game_anim-crash",
-   end_game_anim(
-    12,mainmenu
-   )
+   "gameover_anim",gameover_anim
   )
  end
 end
@@ -1589,9 +1590,33 @@ function retry_anim()
  start_level()
 end
 
-function end_game_anim(
- map_x0,done_function
-)
+function level_done_anim()
+ while draw_score<score do
+  yield()
+ end
+
+ while ticks_remaining>0 do
+  ticks_remaining=max(
+   0,ticks_remaining-30
+  )
+  score+=1
+  printh("score="..score..
+   ", ticks="..ticks_remaining)
+  yield()
+ end
+ printh("done")
+
+ end_game_anim(21)
+ next_level()
+end
+
+function gameover_anim()
+ sleep(60)
+ end_game_anim(12)
+ mainmenu()
+end
+
+function end_game_anim(map_x0)
  local tile_status={}
  local ready={}
 
@@ -1605,9 +1630,6 @@ function end_game_anim(
    return no_tile
   end
  end
-
- curs=nil
- tray=nil
 
  for i=1,grid.h*grid.w do
   local p=grid:_idx2pos(i-1)
@@ -1663,8 +1685,7 @@ function end_game_anim(
   end
  end
 
- return function()
-  sleep(60)
+ local anim=function()
   while #ready>0 do
    local i=rnd_item_from(ready)
    del(ready,i)
@@ -1690,8 +1711,9 @@ function end_game_anim(
    end
    yield()
   end
-  done_function()
  end
+
+ anim()
 end
 -->8
 -- main
@@ -1700,7 +1722,7 @@ levelspecs={
 {--easy win
  grid={9,7,0,7},
  bots={{1,0,2},{7,0,4}},
- misc={21}
+ misc={30}
 },{--level1
  grid={9,7,0,0},
  bots={{0,6},{8,0}},
