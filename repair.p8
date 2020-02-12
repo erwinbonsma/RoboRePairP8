@@ -149,12 +149,27 @@ function fire_event(
  )
 end
 
+--wrap coroutine with a name to
+--facilitate debugging crashes
+function cowrap(name,coroutine)
+ local w={}
+ w.name=name
+ w.coroutine=cocreate(coroutine)
+ return w
+end
+
 --returns true when routine died
-function coinvoke(coroutine)
- assert(coresume(coroutine))
- return costatus(
-  coroutine
- )=="dead"
+function coinvoke(wrapped_cr)
+ printh(
+  "invoking "..
+  wrapped_cr.name
+ )
+ local cr=wrapped_cr.coroutine
+ if not coresume(cr) then
+  printh("coroutine crashed")
+  while true do end
+ end
+ return costatus(cr)=="dead"
 end
 
 function sleep(ticks)
@@ -797,7 +812,7 @@ function bot:new(pos,dr0,o)
  o=setmetatable(o or {},self)
  self.__index=self
 
- o.period=12
+ o.period=15
  o.clk=0
 
  --coarse grid movement
@@ -826,24 +841,28 @@ function bot:_handle_crash()
  self.flip_sprite=self.nxt_dir>2
  self.rearlightcolor=8
 
- self.update_cr=cocreate(
+ self.update_cr=cowrap(
+  "crash_anim",
   crash_anim(self)
  )
 end
 
 function bot:_set_move_anim()
  if self.dir==self.nxt_dir then
-  self.update_cr=cocreate(
+  self.update_cr=cowrap(
+   "move_straight",
    move_straight(self)
   )
  elseif abs(
   self.dir-self.nxt_dir
  )==2 then
-  self.update_cr=cocreate(
+  self.update_cr=cowrap(
+   "move_reverse",
    move_reverse(self)
   )
  else
-  self.update_cr=cocreate(
+  self.update_cr=cowrap(
+   "move_turn",
    move_turn(self)
   )
  end
@@ -1126,7 +1145,8 @@ function tiletray:place_tile(
   not self:_replenish() and
   self:_done()
  ) then
-  self.update_cr=cocreate(
+  self.update_cr=cowrap(
+   "bot_speedup",
    bot_speedup
   )
  end
@@ -1398,7 +1418,8 @@ function on_paired(bot1)
  bot2:stop()
 
  switch_music(-1)
- end_anim=cocreate(
+ end_anim=cowrap(
+  "end_game_anim-paired",
   end_game_anim(
    21,next_level
   )
@@ -1412,7 +1433,8 @@ function on_crash(bot)
  for b in all(bots) do
   if b!=bot then b:stop() end
  end
- end_anim=cocreate(
+ end_anim=cowrap(
+  "end_game_anim-crash",
   end_game_anim(
    12,mainmenu
   )
