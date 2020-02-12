@@ -277,12 +277,35 @@ function draw_number(
  end
 end
 
+--len,unit,color1,color2
+timebar={
+ {4,1,10,9},
+ {8,2,9,4},
+ {16,4,4,2},
+ {28,16,2,2}
+}
+
+function draw_timebar(time_left)
+ local i=1
+ local x=127
+ while (time_left>0) do
+  local tb=timebar[i]
+  local l=min(
+   tb[1],time_left/tb[2]
+  )-1
+  rectfill(x-l,9,x,11,tb[3])
+  line(x-l,12,x,12,tb[4])
+  time_left-=tb[2]*tb[1]
+  x-=tb[1]
+  i+=1
+ end
+end
+
 function roundrect(x1,y1,x2,y2)
  rectfill(x1+1,y1,x2-1,y2)
  line(x1,y1+1,x1,y2-1)
  line(x2,y1+1,x2,y2-1)
 end
-
 
 function switch_music(track)
  if track!=current_track then
@@ -1416,6 +1439,9 @@ function start_level()
   vector:new(4,3)
  )
 
+ ticks_remaining=
+  30*lspec.misc[1]
+
  _update=update_game
  _draw=draw_game
 
@@ -1444,6 +1470,11 @@ function update_game()
   if coinvoke(end_anim) then
    end_anim=nil
   end
+ else
+  ticks_remaining-=1
+  if ticks_remaining==0 then
+   on_death()
+  end
  end
 
  if draw_score<score then
@@ -1461,11 +1492,15 @@ function draw_game()
   tray:draw()
  end
  for i=1,numlives do
-  spr(12,128-i*8,4)
+  spr(12,128-i*8,0)
  end
 
  color(2)
  draw_number(draw_score,0,2,5)
+
+ draw_timebar(
+  ticks_remaining/30
+ )
 end
 
 function on_tile_placed(tray)
@@ -1499,6 +1534,7 @@ function on_paired(bot1)
  assert(bot2.pairing==bot1)
  bot1:stop()
  bot2:stop()
+ score+=100
 
  switch_music(-1)
  end_anim=cowrap(
@@ -1511,8 +1547,14 @@ end
 
 function on_crash(bot)
  printh("bot crashed")
- switch_music(-1)
+
  sfx(4)
+ on_death()
+end
+
+function on_death()
+ switch_music(-1)
+
  for b in all(bots) do
   if b!=bot then b:stop() end
  end
@@ -1657,13 +1699,16 @@ end
 levelspecs={
 {--easy win
  grid={9,7,0,7},
- bots={{1,0,2},{7,0,4}}
+ bots={{1,0,2},{7,0,4}},
+ misc={21}
 },{--level1
  grid={9,7,0,0},
- bots={{0,6},{8,0}}
+ bots={{0,6},{8,0}},
+ misc={180}
 },{--level2
  grid={9,7,9,0},
- bots={{4,0,4,30},{4,6,2,30}}
+ bots={{4,0,4,30},{4,6,2,30}},
+ misc={240}
 }}
 
 function _init()
