@@ -1364,7 +1364,7 @@ function gridcursor:update()
  end
 
  self.draw_pos:lerp(
-  self.draw_pos_target,0.5
+  self.draw_pos_target,0.4
  )
 end
 
@@ -1393,6 +1393,10 @@ function draw_cursor(
 end
 
 function gridcursor:draw()
+ local pos=vector:new(
+  flr(self.draw_pos.x+0.5),
+  flr(self.draw_pos.y+0.5)
+ )
  if self.contraction==0 then
   setpal(3)
   setpal(1) --extract path
@@ -1400,15 +1404,13 @@ function gridcursor:draw()
    setpal(2) --grey out path
   end
   draw_tile(
-   tray:selected_tile(),
-   self.draw_pos
+   tray:selected_tile(),pos
   )
   pal()
  end
 
  draw_cursor(
-  self.draw_pos,
-  self.contraction
+  pos,self.contraction
  )
 end
 
