@@ -352,13 +352,12 @@ end
 -- tiles
 gridtile={}
 tilesize=13
-htilesize=6
 
 _nxt_tile_idx=0
 function gridtile:new(
- entries,connections,prob,o
+ entries,connections,prob
 )
- o=setmetatable(o or {},self)
+ local o=setmetatable({},self)
  self.__index=self
 
  o.entries=entries
@@ -580,6 +579,19 @@ function tilegrid:dump_claimed()
  end
 end
 
+function tilegrid:num_claimed()
+ local total=0
+ for p in all(self.positions) do
+  local t=self.tiles[
+   self:_pos2idx(p)
+  ]
+  if t.bot!=nil then
+   total+=1
+  end
+ end
+ return total
+end
+
 function tilegrid:release_tile(
  pos,bot
 )
@@ -760,6 +772,11 @@ function tilegrid:place_tile(
  local i=self:_pos2idx(pos)
  self.last_removed=self.tiles[i]
  self.tiles[i]=screen_tile
+ --carry over claim
+ if self.last_removed!=nil then
+  screen_tile.bot=
+   self.last_removed.bot
+ end
 end
 
 function tilegrid:update()
@@ -1364,11 +1381,13 @@ function gridcursor:update()
  end
 
  if pos_changed then
+  printh("pos changed")
   self:_pos_changed()
  end
 
  if btnp(🅾️) then
   if tray.num_tiles>=2 then
+   printh("tray switch")
    tray:switch()
    self:_check_allowed()
   else
@@ -1381,6 +1400,7 @@ function gridcursor:update()
    self.allowed and
    not bot_at(self.pos)
   ) then
+   printh("placed tile")
    tray:place_tile(self.pos)
    self.allowed=false
    self.contraction_clk=20
@@ -1545,12 +1565,17 @@ function next_level()
 end
 
 function update_game()
+ local n1=grid:num_claimed()
  grid:update()
+ local n2=grid:num_claimed()
  foreach(bots,bot.update)
+ local n3=grid:num_claimed()
  if curs!=nil then
   curs:update()
  end
+ local n4=grid:num_claimed()
  tray:update()
+ local n5=grid:num_claimed()
 
  if end_anim!=nil then
   if coinvoke(end_anim) then
@@ -1563,9 +1588,18 @@ function update_game()
    on_death()
   end
  end
+ local n6=grid:num_claimed()
 
  if draw_score<score then
   draw_score+=1
+ end
+ local n7=grid:num_claimed()
+
+ if n1!=n7 then
+  printh(
+   ""..n1..","..n2..","..n3..
+   ","..n4..","..n5..","..n6
+  )
  end
 end
 
