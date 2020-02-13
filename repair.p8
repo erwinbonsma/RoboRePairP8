@@ -1286,18 +1286,26 @@ function gridcursor:new(pos)
  self.__index=self
 
  o.pos=pos
+ o.draw_pos=vector:new(0,0)
+
  o.contraction=0
  o.contraction_clk=0
- gridcursor._update_status(o)
+ gridcursor._pos_changed(o)
 
  return o
 end
 
-function gridcursor:_update_status()
+function gridcursor:_check_allowed()
  self.allowed=grid:can_place_tile(
   tray:selected_tile(),
   self.pos
  )
+end
+
+function gridcursor:_pos_changed()
+ self.draw_pos_target=
+  grid:screen_pos(self.pos)
+ self:_check_allowed()
 end
 
 function gridcursor:update()
@@ -1321,13 +1329,13 @@ function gridcursor:update()
  end
 
  if pos_changed then
-  self:_update_status()
+  self:_pos_changed()
  end
 
  if btnp(🅾️) then
   if tray.num_tiles>=2 then
    tray:switch()
-   self:_update_status()
+   self:_check_allowed()
   else
    sfx(1) --no can do
   end
@@ -1354,6 +1362,10 @@ function gridcursor:update()
    )
   )
  end
+
+ self.draw_pos:lerp(
+  self.draw_pos_target,0.5
+ )
 end
 
 function draw_cursor(
@@ -1381,10 +1393,6 @@ function draw_cursor(
 end
 
 function gridcursor:draw()
- local pos=grid:screen_pos(
-  self.pos
- )
-
  if self.contraction==0 then
   setpal(3)
   setpal(1) --extract path
@@ -1392,13 +1400,15 @@ function gridcursor:draw()
    setpal(2) --grey out path
   end
   draw_tile(
-   tray:selected_tile(),pos
+   tray:selected_tile(),
+   self.draw_pos
   )
   pal()
  end
 
  draw_cursor(
-  pos,self.contraction
+  self.draw_pos,
+  self.contraction
  )
 end
 
