@@ -1044,15 +1044,15 @@ function bot:update()
 end
 
 function bot:draw()
- local pos=grid:screen_pos(
+ local pos=grid:screentile_at(
   self.pos
- )
+ ).pos
  if self.crashing then
   pal(8,self.rearlightcolor)
   spr(
    self.crash_sprite,
-   pos.x-1+self.dirv.x,
-   pos.y-1+self.dirv.y,
+   pos.x-0.5+self.dirv.x,
+   pos.y-0.5+self.dirv.y,
    2,2,
    self.flipx,self.flipy
   )
@@ -1065,8 +1065,8 @@ function bot:draw()
   end
   spr(
    160+si*2,
-   pos.x-1+self.dirv.x,
-   pos.y-1+self.dirv.y,
+   pos.x-0.5+self.dirv.x,
+   pos.y-0.5+self.dirv.y,
    2,2
   )
  end
