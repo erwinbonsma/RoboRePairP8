@@ -206,13 +206,31 @@ font={
  y={20, 3,18,20,29, 9},
  z={18, 6,19,28, 9,24}
 }
-font[" "]={}
-font["-"]={-2,0,26,-2}
-font["("]={6,21,3,-2}
-font[")"]={-2,12,21,9}
-font["+"]={0,31}
-font[":"]={16,0,16}
-font[","]={-2,0,0,9}
+special_chars=" -()+:,0123456789"
+special_chars_spec={
+ {},           -- space
+ {-2,0,26,-2}, -- -
+ {6,21,3,-2},  -- (
+ {-2,12,21,9}, -- )
+ {0,31},       -- +
+ {16,0,16},    -- :
+ {-2,0,0,9},   -- ,
+ {22,21,19,28,21,25}, --0
+ {-2,28,21,27,-2},    --1
+ {18,22,19,12,9,24},  --2
+ {18,18,18,12,13,9},  --3
+ {20,19,0,20,29,17},  --4
+ {22,19,18,24,12,9},  --5
+ {6,23,3,24,12,9},    --6
+ {18,0,0,28,21,17},   --7
+ {6,7,3,12,13,9},     --8
+ {6,3,18,12,29,9}     --9
+}
+for i=1,#special_chars do
+ local ch=sub(special_chars,i,i)
+ font[ch]=special_chars_spec[i]
+ dump_list(font[ch])
+end
 
 fontx={1,2,1,0,1}
 fonty={0,1,2,1,1}
@@ -1426,7 +1444,7 @@ function new_game()
  start_level()
 end
 
-function start_level()
+function load_level()
  local lspec=levelspecs[level]
 
  local gs=lspec.grid
@@ -1466,6 +1484,27 @@ function start_level()
  _draw=draw_game
 
  switch_music(0)
+end
+
+function start_level()
+ local p=vector:new(50,0)
+ local tp=vector:new(50,58)
+ local cnt=0
+
+ _draw=function()
+  cls()
+  color(2)
+  drawtext(
+   "level "..level,p.x,p.y
+  )
+ end
+ _update=function()
+  p:lerp(tp,0.2)
+  cnt+=1
+  if cnt==90 then
+   load_level()
+  end
+ end
 end
 
 function next_level()
