@@ -1215,6 +1215,10 @@ function tiletray:_done()
  return true
 end
 
+function tiletray:hide()
+ self.hidden=true
+end
+
 function tiletray:place_tile(
  pos
 )
@@ -1228,6 +1232,8 @@ function tiletray:place_tile(
   not self:_replenish() and
   self:_done()
  ) then
+  --no more tiles can be placed
+  disable_input()
   self.update_cr=cowrap(
    "bot_speedup",
    bot_speedup
@@ -1257,6 +1263,8 @@ function tiletray:update()
 end
 
 function tiletray:draw()
+ if self.hidden then return end
+
  setpal(3)
  foreach(
   self.tiles,
@@ -1463,8 +1471,8 @@ function update_game()
  foreach(bots,bot.update)
  if curs!=nil then
   curs:update()
-  tray:update()
  end
+ tray:update()
 
  if end_anim!=nil then
   if coinvoke(end_anim) then
@@ -1489,8 +1497,8 @@ function draw_game()
  foreach(bots,bot.draw)
  if curs!=nil then
   curs:draw()
-  tray:draw()
  end
+ tray:draw()
  for i=1,numlives do
   spr(12,128-i*8,0)
  end
@@ -1505,7 +1513,7 @@ end
 
 function disable_input()
  curs=nil
- tray=nil
+ tray:hide()
 end
 
 function on_tile_placed(tray)
