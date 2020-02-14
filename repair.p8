@@ -1612,7 +1612,6 @@ function new_game()
  numlives=3
  score=0
  draw_score=score
-
  start_level()
 end
 
@@ -1654,6 +1653,13 @@ function load_level()
 
  _update60=update_game
  _draw=draw_game
+
+ menuitem(
+  1,"end attempt",on_abort
+ )
+ menuitem(
+  2,"end game",end_game
+ )
 
  switch_music(0)
 end
@@ -1807,13 +1813,24 @@ function on_crash(bot)
  on_death()
 end
 
-function on_death()
+function on_abort(bot)
+ sfx(8)
+ on_death()
+end
+
+function end_play()
  switch_music(-1)
+ menuitem(1)
+ menuitem(2)
 
  for b in all(bots) do
   if b!=bot then b:stop() end
  end
  disable_input()
+end
+
+function on_death()
+ end_play()
 
  if numlives>0 then
   numlives-=1
@@ -1821,10 +1838,13 @@ function on_death()
    "retry_anim",retry_anim
   )
  else
-  end_anim=cowrap(
-   "gameover_anim",gameover_anim
-  )
+  gameover(2)
  end
+end
+
+function end_game()
+ end_play()
+ gameover()
 end
 
 function bot_at(pos)
@@ -1834,6 +1854,17 @@ function bot_at(pos)
   end
  end
  return false
+end
+
+function gameover(wait)
+ printh("game over")
+ end_anim=cowrap(
+  "gameover_anim",
+  function()
+   sleep(wait or 0)
+   gameover_anim()
+  end
+ )
 end
 
 function retry_anim()
@@ -1868,7 +1899,6 @@ function level_done_anim()
 end
 
 function gameover_anim()
- sleep(2,true)
  end_game_anim(12)
  mainmenu()
 end
