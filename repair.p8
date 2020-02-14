@@ -160,13 +160,12 @@ end
 
 --returns true when routine died
 function coinvoke(wrapped_cr)
- printh(
-  "invoking "..
-  wrapped_cr.name
- )
  local cr=wrapped_cr.coroutine
  if not coresume(cr) then
-  printh("coroutine crashed")
+  printh(
+   "coroutine "..
+   wrapped_cr.name.."crashed"
+  )
   while true do end
  end
  return costatus(cr)=="dead"
@@ -1700,19 +1699,14 @@ function next_level()
 end
 
 function update_game()
- local n1=grid:num_claimed()
  grid:update()
- local n2=grid:num_claimed()
  foreach(bots,bot.update)
- local n3=grid:num_claimed()
  if curs!=nil then
   curs:update()
  end
- local n4=grid:num_claimed()
  if tray!=nil then
   tray:update()
  end
- local n5=grid:num_claimed()
 
  if end_anim!=nil then
   if coinvoke(end_anim) then
@@ -1725,18 +1719,9 @@ function update_game()
    on_death()
   end
  end
- local n6=grid:num_claimed()
 
  if draw_score<score then
   draw_score+=1
- end
- local n7=grid:num_claimed()
-
- if n1!=n7 then
-  printh(
-   ""..n1..","..n2..","..n3..
-   ","..n4..","..n5..","..n6
-  )
  end
 
  for cr in all(game_crs) do
