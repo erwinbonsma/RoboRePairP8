@@ -1,6 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
+fps=60
 vector={}
 
 function vector:new(x,y)
@@ -176,9 +177,9 @@ function action_btnp()
 end
 
 function sleep(
- ticks,can_abort
+ time_in_sec,can_abort
 )
- for wait=1,ticks do
+ for wait=1,fps*time_in_sec do
   if (
    can_abort and action_btnp()
   ) then
@@ -499,7 +500,7 @@ end
 
 function screentile:update()
  self.pos:lerp(
-  self.target_pos,0.2
+  self.target_pos,0.1
  )
 end
 
@@ -973,7 +974,7 @@ function bot:new(pos,dr0,o)
  o=setmetatable(o or {},self)
  self.__index=self
 
- o.period=15
+ o.period=30
  o.clk=0
 
  --coarse grid movement
@@ -1274,7 +1275,7 @@ function bot_speedup()
     done=false
    end
   end
-  sleep(15)
+  sleep(0.5)
  end
 end
 
@@ -1553,7 +1554,7 @@ function gridcursor:update()
  end
 
  self.draw_pos:lerp(
-  self.draw_pos_target,0.4
+  self.draw_pos_target,0.25
  )
 end
 
@@ -1649,9 +1650,9 @@ function load_level()
  )
 
  ticks_remaining=
-  30*lspec.misc[1]
+  fps*lspec.misc[1]
 
- _update=update_game
+ _update60=update_game
  _draw=draw_game
 
  switch_music(0)
@@ -1675,8 +1676,8 @@ function start_level()
    drawtext("get ready!",41,62)
   end
  end
- _update=function()
-  p:lerp(tp,0.2)
+ _update60=function()
+  p:lerp(tp,0.1)
   t+=1
   if t==30 then
    sfx(7)
@@ -1693,7 +1694,7 @@ function next_level()
   start_level()
  else
   end_game_anim(39)
-  sleep(900,true)
+  sleep(30,true)
   mainmenu()
  end
 end
@@ -1836,14 +1837,14 @@ function bot_at(pos)
 end
 
 function retry_anim()
- sleep(90)
+ sleep(3)
  start_level()
 end
 
 function level_done_anim()
  --wiggle time!
 
- sleep(90)
+ sleep(3)
 
  score+=100
  while draw_score<score do
@@ -1851,7 +1852,7 @@ function level_done_anim()
   yield()
  end
 
- sleep(15)
+ sleep(0.5)
 
  while ticks_remaining>0 do
   ticks_remaining=max(
@@ -1862,12 +1863,12 @@ function level_done_anim()
   yield()
  end
 
- sleep(60,true)
+ sleep(2,true)
  next_level()
 end
 
 function gameover_anim()
- sleep(60,true)
+ sleep(2,true)
  end_game_anim(12)
  mainmenu()
 end
@@ -1959,7 +1960,7 @@ function end_game_anim(map_x0)
    yield()
   end
 
-  sleep(90,true)
+  sleep(3,true)
  end
 
  anim()
@@ -1978,7 +1979,7 @@ levelspecs={
  misc={180}
 },{--level2
  grid={9,7,9,0},
- bots={{4,0,4,30},{4,6,2,30}},
+ bots={{4,0,4,60},{4,6,2,60}},
  misc={240}
 }}
 
@@ -1989,12 +1990,12 @@ end
 
 function mainmenu()
  switch_music(25)
- _update=update_menu
+ _update60=update_menu
  _draw=draw_menu
 end
 
 function showhelp()
- _update=function()
+ _update60=function()
   if action_btnp() then
    mainmenu()
   end
