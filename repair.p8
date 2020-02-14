@@ -1601,7 +1601,7 @@ function new_game()
  numlives=3
  score=0
  draw_score=score
- game_crs={}
+ speedup_cr=nil
  start_level()
 end
 
@@ -1724,10 +1724,11 @@ function update_game()
   draw_score+=1
  end
 
- for cr in all(game_crs) do
-  if coinvoke(cr) then
-   del(game_crs,cr)
-  end
+ if (
+  speedup_cr!=nil and
+  coinvoke(speedup_cr
+ ) then
+  speedup_cr=nil
  end
 end
 
@@ -1767,12 +1768,9 @@ function on_grid_done(tray)
  printh("grid done!")
  disable_input()
 
- add(
-  game_crs,
-  cowrap(
-   "bot_speedup",
-   bot_speedup
-  )
+ speedup_cr=cowrap(
+  "bot_speedup",
+  bot_speedup
  )
 end
 
@@ -1801,6 +1799,7 @@ function on_paired(bot1)
  printh("bots paired")
 
  end_play()
+ speedup_cr=nil
  end_anim=cowrap(
   "level_done_anim",
   level_done_anim
