@@ -1274,20 +1274,6 @@ end
 
 tiletray={}
 
-function bot_speedup()
- local done=false
- while not done do
-  done=true
-  for bot in all(bots) do
-   if bot.period>1 then
-    bot.period=ceil(bot.period/2)
-    done=false
-   end
-  end
-  sleep(0.5)
- end
-end
-
 function tiletray:new(size)
  local o=setmetatable({},self)
  self.__index=self
@@ -1311,6 +1297,7 @@ function tiletray:new(size)
  ) do end
 
  o.on_placed={}
+ o.on_complete={}
 
  return o
 end
@@ -1416,10 +1403,6 @@ function tiletray:_done()
  return true
 end
 
-function tiletray:hide()
- self.hidden=true
-end
-
 function tiletray:place_tile(
  pos
 )
@@ -1433,11 +1416,8 @@ function tiletray:place_tile(
   not self:_replenish() and
   self:_done()
  ) then
-  --no more tiles can be placed
-  disable_input()
-  self.update_cr=cowrap(
-   "bot_speedup",
-   bot_speedup
+  fire_event(
+   self.on_complete,self
   )
  end
 end
@@ -1464,8 +1444,6 @@ function tiletray:update()
 end
 
 function tiletray:draw()
- if self.hidden then return end
-
  setpal(3)
  foreach(
   self.tiles,
@@ -1477,6 +1455,7 @@ function tiletray:draw()
   draw_cursor(self.cursor_pos)
  end
 end
+
 -->8
 --cursor
 
@@ -1623,6 +1602,7 @@ function new_game()
  numlives=3
  score=0
  draw_score=score
+ game_crs={}
  start_level()
 end
 
@@ -1653,6 +1633,9 @@ function load_level()
  tray=tiletray:new(3)
  add(
   tray.on_placed,on_tile_placed
+ )
+ add(
+  tray.on_complete,on_grid_done
  )
 
  curs=gridcursor:new(
@@ -1726,7 +1709,9 @@ function update_game()
   curs:update()
  end
  local n4=grid:num_claimed()
- tray:update()
+ if tray!=nil then
+  tray:update()
+ end
  local n5=grid:num_claimed()
 
  if end_anim!=nil then
@@ -1753,6 +1738,12 @@ function update_game()
    ","..n4..","..n5..","..n6
   )
  end
+
+ for cr in all(game_crs) do
+  if coinvoke(cr) then
+   del(game_crs,cr)
+  end
+ end
 end
 
 function draw_game()
@@ -1763,7 +1754,9 @@ function draw_game()
  if curs!=nil then
   curs:draw()
  end
- tray:draw()
+ if tray!=nil then
+  tray:draw()
+ end
  for i=1,numlives do
   spr(12,128-i*8,0)
  end
@@ -1772,17 +1765,30 @@ function draw_game()
  draw_number(draw_score,0,2,5)
 
  draw_timebar(
-  ticks_remaining/30
+  ticks_remaining/fps
  )
-end
-
-function disable_input()
- curs=nil
- tray:hide()
 end
 
 function on_tile_placed(tray)
  score+=10
+end
+
+function disable_input()
+ curs=nil
+ tray=nil
+end
+
+function on_grid_done(tray)
+ printh("grid done!")
+ disable_input()
+
+ add(
+  game_crs,
+  cowrap(
+   "bot_speedup",
+   bot_speedup
+  )
+ )
 end
 
 function on_move(bot)
@@ -1808,9 +1814,8 @@ end
 
 function on_paired(bot1)
  printh("bots paired")
- switch_music(-1)
- disable_input()
 
+ end_play()
  end_anim=cowrap(
   "level_done_anim",
   level_done_anim
@@ -1824,19 +1829,18 @@ function on_crash(bot)
  on_death()
 end
 
-function on_abort(bot)
+function on_abort()
  sfx(8)
  on_death()
 end
 
 function end_play()
  switch_music(-1)
+
+ --remove menu items
  menuitem(1)
  menuitem(2)
 
- for b in all(bots) do
-  if b!=bot then b:stop() end
- end
  disable_input()
 end
 
@@ -1881,6 +1885,20 @@ end
 function retry_anim()
  sleep(3)
  start_level()
+end
+
+function bot_speedup()
+ local done=false
+ while not done do
+  done=true
+  for bot in all(bots) do
+   if bot.period>1 then
+    bot.period=ceil(bot.period/2)
+    done=false
+   end
+  end
+  sleep(0.5)
+ end
 end
 
 function level_done_anim()
