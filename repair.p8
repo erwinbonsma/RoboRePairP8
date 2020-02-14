@@ -1022,27 +1022,28 @@ function bot:_handle_crash()
  self.period=6 --fixed speed
  sfx(5) --falling
 
- self.update_cr=cowrap(
+ self.anim_cr=cowrap(
   "crash_anim",
   crash_anim(self)
  )
+ self:stop()
 end
 
 function bot:_set_move_anim()
  if self.dir==self.nxt_dir then
-  self.update_cr=cowrap(
+  self.move_cr=cowrap(
    "move_straight",
    move_straight(self)
   )
  elseif abs(
   self.dir-self.nxt_dir
  )==2 then
-  self.update_cr=cowrap(
+  self.move_cr=cowrap(
    "move_reverse",
    move_reverse(self)
   )
  else
-  self.update_cr=cowrap(
+  self.move_cr=cowrap(
    "move_turn",
    move_turn(self)
   )
@@ -1187,16 +1188,17 @@ function bot:_delta_rot(d)
 end
 
 function bot:_paired()
- self.update_cr=cowrap(
+ self.anim_cr=cowrap(
   "pair_anim",
   pair_anim(self,self.pairing)
  )
  self.pairing=nil
+ self:stop()
 end
 
 function bot:stop()
- self.update_cr=nil
- self.pairing=nil
+ printh("bot stopped")
+ self.move_cr=nil
 end
 
 function bot:update()
@@ -1206,27 +1208,33 @@ function bot:update()
  end
 
  if (
-  self.update_cr!=nil and
-  coinvoke(self.update_cr)
+  self.anim_cr!=nil and
+  coinvoke(self.anim_cr)
  ) then
-  self:_move_step()
+  self.anim_cr=nil
  end
 
- if self.pairing!=nil then
-  local pbot=self.pairing
-  local p1=grid:screen_pos(
-   self.pos
-  )+self.dirv
-  local p2=grid:screen_pos(
-   pbot.pos
-  )+pbot.dirv
-  printh("dist="..p1:dist(p2))
-  if p1:dist(p2)<=10.5 then
-   self.pairing:_paired()
-   self:_paired()
-   fire_event(
-    self.on_paired,self
-   )
+ if self.move_cr!=nil then
+  if coinvoke(self.move_cr) then
+   self:_move_step()
+  end
+
+  if self.pairing!=nil then
+   local pbot=self.pairing
+   local p1=grid:screen_pos(
+    self.pos
+   )+self.dirv
+   local p2=grid:screen_pos(
+    pbot.pos
+   )+pbot.dirv
+   printh("dist="..p1:dist(p2))
+   if p1:dist(p2)<=10.5 then
+    self.pairing:_paired()
+    self:_paired()
+    fire_event(
+     self.on_paired,self
+    )
+   end
   end
  end
 end
@@ -1811,8 +1819,11 @@ end
 function on_crash(bot)
  printh("bot crashed")
 
- sfx(4)
- on_death()
+ if end_anim==nil then
+  --act only on first crash
+  sfx(4)
+  on_death()
+ end
 end
 
 function on_abort()
@@ -1828,6 +1839,10 @@ function end_play()
  menuitem(2)
 
  disable_input()
+
+ for bot in all(bots) do
+  bot:stop()
+ end
 end
 
 function on_death()
