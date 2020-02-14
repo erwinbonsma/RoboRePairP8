@@ -164,7 +164,7 @@ function coinvoke(wrapped_cr)
  if not coresume(cr) then
   printh(
    "coroutine "..
-   wrapped_cr.name.."crashed"
+   wrapped_cr.name.." crashed"
   )
   while true do end
  end
@@ -342,7 +342,7 @@ end
 
 function switch_music(track)
  if track!=current_track then
-  --music(track)
+  music(track)
   current_track=track
  end
 end
@@ -1239,8 +1239,8 @@ function bot:draw()
   pal(8,self.rearlightcolor)
   spr(
    self.crash_sprite,
-   pos.x-0.5+self.dirv.x,
-   pos.y-0.5+self.dirv.y,
+   pos.x+self.dirv.x-1,
+   pos.y+self.dirv.y-1,
    2,2,
    self.flipx,self.flipy
   )
@@ -1253,8 +1253,8 @@ function bot:draw()
   end
   spr(
    160+si*2,
-   pos.x-0.5+self.dirv.x,
-   pos.y-0.5+self.dirv.y,
+   pos.x+self.dirv.x-1,
+   pos.y+self.dirv.y-1,
    2,2
   )
  end
@@ -1662,6 +1662,8 @@ function start_level()
  local tp=vector:new(48,50)
  local t=0
 
+ switch_music(-1)
+
  _draw=function()
   cls()
   color(4)
@@ -1726,7 +1728,7 @@ function update_game()
 
  if (
   speedup_cr!=nil and
-  coinvoke(speedup_cr
+  coinvoke(speedup_cr)
  ) then
   speedup_cr=nil
  end
