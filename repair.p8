@@ -477,8 +477,8 @@ function draw_tile(
 
  spr(
   si,
-  flr(screen_pos.x+0.5),
-  flr(screen_pos.y+0.5)
+  screen_pos.x,
+  screen_pos.y
   ,2,2
  )
 end
@@ -512,13 +512,17 @@ end
 tilegrid={}
 
 function tilegrid:new(
- width,height,mapx,mapy
+ tilesize,width,height,mapx,mapy
 )
  local o=setmetatable({},self)
  self.__index=self
 
  o.w=width
  o.h=height
+
+ o.tilesize=tilesize
+ o.x0=64-flr(o.w*tilesize/2)+0.5
+ o.y0=64-flr(o.h*tilesize/2)+0.5
 
  o.positions={}
  o.tiles={}
@@ -527,12 +531,14 @@ function tilegrid:new(
    local pos=vector:new(x,y)
    add(o.positions,pos)
 
-   local m=mget(mapx+x,mapy+y)
-   local t
-   if m==0 then
-    t=no_tile
-   else
-    t=tiles[m-15]
+   local t=no_tile
+   if (
+    mapx!=nil and mapy!=nil
+   ) then
+    local m=mget(mapx+x,mapy+y)
+    if m>0 then
+     t=tiles[m-15]
+    end
    end
    local scr_t=screentile:new(
     t,vector:new(64,64)
@@ -695,8 +701,8 @@ end
 
 function tilegrid:screen_pos(pos)
  return vector:new(
-  pos.x*tilesize+5,
-  pos.y*tilesize+22
+  pos.x*self.tilesize+self.x0,
+  pos.y*self.tilesize+self.y0
  )
 end
 
@@ -806,8 +812,8 @@ function move_straight(bot)
  local dr=vdirs[bot.dir]
 
  return function()
-  for i=1,tilesize-1 do
-   if i==tilesize-4 then
+  for i=1,12 do
+   if i==9 then
     while bot:_is_blocked() do
      yield()
     end
@@ -828,10 +834,8 @@ function move_reverse(bot)
  local dr=vdirs[bot.dir]
 
  return function()
-  local delta=flr(tilesize/2)
-
   --move halfway
-  for i=1,delta do
+  for i=1,6 do
    bot.dirv:add(dr)
    if i==4 then
     bot:_release_prv()
@@ -846,7 +850,7 @@ function move_reverse(bot)
   end
 
   --move back
-  for i=1,delta do
+  for i=1,6 do
    if i==3 then
     while bot:_is_blocked() do
      yield()
@@ -1064,8 +1068,7 @@ function bot:_move_step()
  --fine-grained drawing state
  local entry=opposite(self.dir)
  local dirv=vdirs[entry]
- local delta=flr(tilesize/2)
- self.dirv=dirv*delta
+ self.dirv=dirv*6
  self.rot=(self.dir-1)*4
 
  local t=grid:tile_at(self.pos)
@@ -1287,7 +1290,8 @@ function tiletray:new(size)
 
  o.xsep=2
  local w=(
-  size*tilesize+(size-1)*o.xsep
+  size*grid.tilesize+
+  (size-1)*o.xsep
  )
  o.x0=63-flr(w/2)
 
@@ -1329,7 +1333,9 @@ function tiletray:_new_tile()
 end
 
 function tiletray:_update_target_pos()
- local mul=tilesize+self.xsep
+ local mul=(
+  grid.tilesize+self.xsep
+ )
  for i,t in pairs(self.tiles) do
   t.target_pos=vector:new(
    self.x0+(i-1)*mul,0
@@ -1368,7 +1374,9 @@ function tiletray:_replenish()
 
  self.tiles[1]=screentile:new(
   tile,
-  vector:new(self.x0,-tilesize)
+  vector:new(
+   self.x0,-grid.tilesize
+  )
  )
  self.num_tiles+=1
  self:_update_target_pos()
@@ -1583,10 +1591,6 @@ function draw_cursor(
 end
 
 function gridcursor:draw()
- local pos=vector:new(
-  flr(self.draw_pos.x+0.5),
-  flr(self.draw_pos.y+0.5)
- )
  if self.contraction==0 then
   setpal(3)
   setpal(1) --extract path
@@ -1594,13 +1598,14 @@ function gridcursor:draw()
    setpal(2) --grey out path
   end
   draw_tile(
-   tray:selected_tile(),pos
+   tray:selected_tile(),
+   self.draw_pos
   )
   pal()
  end
 
  draw_cursor(
-  pos,self.contraction
+  self.draw_pos,self.contraction
  )
 end
 
@@ -1620,7 +1625,7 @@ function load_level()
 
  local gs=lspec.grid
  grid=tilegrid:new(
-  gs[1],gs[2],gs[3],gs[4]
+  13,gs[1],gs[2],gs[3],gs[4]
  )
 
  bots={}
@@ -1699,7 +1704,7 @@ function next_level()
  if level<=#levelspecs then
   start_level()
  else
-  end_game_anim(39)
+  morph_grid(39)
   sleep(30,true)
   mainmenu()
  end
@@ -1899,11 +1904,11 @@ function level_done_anim()
 end
 
 function gameover_anim()
- end_game_anim(12)
+ morph_grid(12)
  mainmenu()
 end
 
-function end_game_anim(map_x0)
+function morph_grid(map_x0)
  local tile_status={}
  local ready={}
 
