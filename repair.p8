@@ -613,14 +613,13 @@ function tilegrid:claim_tile(
  local t=self.tiles[
   self:_pos2idx(pos)
  ]
- if t.bot!=nil then
-  return false
+ if t.bot==nil then
+  t.bot=bot
+  printh("claimed "..pos:to_string())
+  self:dump_claimed()
  end
 
- printh("claimed "..pos:to_string())
- t.bot=bot
- self:dump_claimed()
- return true
+ return t.bot
 end
 
 function tilegrid:contains(pos)
@@ -843,7 +842,7 @@ function move_reverse(bot)
 
   --turn
   for i=1,8 do
-   bot.rot=(bot.rot+1)%16
+   bot:_delta_rot(1)
    yield()
   end
 
@@ -882,14 +881,14 @@ function move_turn(bot)
     end
    end
 
-   bot.rot=(bot.rot+16+o)%16
+   bot:_delta_rot(o)
    bot.dirv:add(dr1)
    bot.dirv:add(dr2)
    yield()
   end
 
   --final straight bit
-  bot.rot=(bot.rot+16+o)%16
+  bot:_delta_rot(o)
   for i=1,3 do
    bot.dirv:add(dr2)
    yield()
@@ -932,6 +931,50 @@ function crash_anim(bot)
  end
 end
 
+function pair_anim(bot,bot2)
+ --how much bot should rotate in
+ --order to face the other bot
+ local delta=function(r)
+  return abs(
+   8-(16+bot2.rot-r)%16
+  )
+ end
+
+ return function()
+  --rotate so that bots face
+  while delta(bot.rot)>0 do
+   if (
+    delta(bot.rot+1)<
+    delta(bot.rot-1)
+   ) then
+    bot:_delta_rot(1)
+   else
+    bot:_delta_rot(-1)
+   end
+   if delta(bot.rot)>0 then
+    --ensure both bots starts
+    --wiggling at the same time
+    --in case the initial delta
+    --was odd
+    sleep(5,true)
+   end
+  end
+  sleep(5,true)
+
+  --wiggle
+  while true do
+   bot:_delta_rot(1)
+   sleep(5,true)
+   bot:_delta_rot(-1)
+   sleep(5,true)
+   bot:_delta_rot(-1)
+   sleep(5,true)
+   bot:_delta_rot(1)
+   sleep(5,true)
+  end
+ end
+end
+
 function bot:new(pos,dr0,o)
  o=setmetatable(o or {},self)
  self.__index=self
@@ -947,7 +990,9 @@ function bot:new(pos,dr0,o)
    tile:all_entries()
   )
  )
- assert(grid:claim_tile(pos,o))
+ assert(
+  grid:claim_tile(pos,o)==o
+ )
  bot._move_step(o)
 
  o.on_move={}
@@ -1047,17 +1092,103 @@ function bot:_release_prv()
  end
 end
 
+--is the nxt nxt position
+--already known?
+function bot:_forced_nxt2_pos()
+ local t=grid:tile_at(
+  self.nxt_pos
+ )
+ local exits=t:exits_from(
+  opposite(self.nxt_dir)
+ )
+ if #exits!=1 then
+  return nil
+ end
+
+ --return the forced nxt dest
+ return (
+  self.nxt_pos+vdirs[exits[1]]
+ )
+end
+
+function bot:_will_pair_with(
+ bot2
+)
+ printh("will_pair_with check")
+ self:dump()
+ printh(" with ")
+ bot2:dump()
+ printh("?")
+
+ if (
+  bot2.nxt_pos==self.pos
+ ) then
+  --the bots will meet
+  return true
+ end
+
+ if (
+  bot2.nxt_pos!=self.nxt_pos
+ ) then
+  --the bots will not meet.
+  --the other bot may be leaving
+  --the claimed tile to another
+  --tile
+  return false
+ end
+
+ --they will visit the same tile
+ --but may still avoid collision
+ return (
+  bot2:_forced_nxt2_pos()==
+   self.pos and
+  self:_forced_nxt2_pos()==
+   bot2.pos
+ )
+end
+
 --check if next tile is free. if
 --not, claim it
 function bot:_is_blocked()
  printh("check blocked")
- return (
+ if self.pairing!=nil then
   --never blocked when pairing
-  self.pairing==nil and
-  not grid:claim_tile(
-   self.nxt_pos,self
-  )
+  return false
+ end
+ local claimer=grid:claim_tile(
+  self.nxt_pos,self
  )
+ if claimer==self then
+  --managed to claim the tile
+  return false
+ end
+
+ if (
+  self:_will_pair_with(claimer)
+ ) then
+  self.pairing=claimer
+  claimer.pairing=self
+  return false
+ end
+
+ --tile is blocked by another
+ --bot but our paths will not
+ --cross, so just wait
+ printh("tile "..self.nxt_pos:to_string()..
+  " is blocked")
+ return true
+end
+
+function bot:_delta_rot(d)
+ self.rot=(self.rot+16+d)%16
+end
+
+function bot:_paired()
+ self.update_cr=cowrap(
+  "pair_anim",
+  pair_anim(self,self.pairing)
+ )
+ self.pairing=nil
 end
 
 function bot:stop()
@@ -1088,6 +1219,8 @@ function bot:update()
   )+pbot.dirv
   printh("dist="..p1:dist(p2))
   if p1:dist(p2)<=10.5 then
+   self.pairing:_paired()
+   self:_paired()
    fire_event(
     self.on_paired,self
    )
@@ -1123,6 +1256,13 @@ function bot:draw()
   )
  end
  pal()
+end
+
+function bot:dump()
+ printh("pos="..self.pos:to_string())
+ printh("dir="..self.dir)
+ printh("nxt_pos="..self.nxt_pos:to_string())
+ printh("nxt_dir="..self.nxt_dir)
 end
 
 -->8
@@ -1656,10 +1796,6 @@ end
 
 function on_paired(bot1)
  printh("bots paired")
- local bot2=bot1.pairing
- assert(bot2.pairing==bot1)
- bot1:stop()
- bot2:stop()
  score+=100
  switch_music(-1)
  disable_input()
