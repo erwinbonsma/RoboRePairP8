@@ -1,6 +1,9 @@
 pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
+-- bumble bots re-pair
+-- (c) 2020, erwin bonsma
+
 fps=60
 vector={}
 
@@ -609,9 +612,6 @@ function tilegrid:release_tile(
   self:_pos2idx(pos)
  ]
  printh("releasing "..pos:to_string())
- if t.bot==nil then
-  printh("already nil")
- end
  assert(t.bot==bot)
  t.bot=nil
  self:dump_claimed()
@@ -1118,12 +1118,6 @@ end
 function bot:_will_pair_with(
  bot2
 )
- printh("will_pair_with check")
- self:dump()
- printh(" with ")
- bot2:dump()
- printh("?")
-
  if (
   bot2.nxt_pos==self.pos
  ) then
@@ -2009,7 +2003,6 @@ function morph_grid(map_x0)
    local i=rnd_item_from(ready)
    del(ready,i)
    local p=grid:_idx2pos(i-1)
-   --printh("popped "..p:to_string())
    place_tile(p)
    tile_status[i]=2
 
