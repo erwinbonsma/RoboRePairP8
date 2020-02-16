@@ -277,6 +277,29 @@ function drawtext(s,x,y)
  end
 end
 
+function textwidth(s)
+ local w=-(#s-1) --spacing
+ for i=1,#s do
+  local spec=font[sub(s,i,i)]
+  local row=0
+  if #spec==0 then
+   w+=3
+  end
+  for j=1,#spec do
+   local v=spec[j]
+   if v<0 then
+    w+=(v+3) --tweak spacing
+   else
+    if row==0 then
+     w+=3
+    end
+    row=(row+1)%3
+   end
+  end
+ end
+ return w
+end
+
 digits={
  125,80,55,87,90,79,111,81,127,95
 }
@@ -1781,9 +1804,7 @@ function new_game()
  start_level()
 end
 
-function load_level()
- local lspec=levelspecs[level]
-
+function load_level(lspec)
  local gs=lspec.grid
  grid=tilegrid:new(
   13,gs[1],gs[2],gs[3],gs[4]
@@ -1836,21 +1857,27 @@ function load_level()
 end
 
 function start_level()
- local p=vector:new(48,0)
- local tp=vector:new(48,50)
+ local lspec=levelspecs[level]
+
  local t=0
+ local s=(
+  "level "..level..": "..
+  lspec.name
+ )
+ local w=textwidth(s)
+ local x=64-flr(w/2)
+ local p=vector:new(x,0)
+ local tp=vector:new(x,50)
 
  switch_music(-1)
 
  _draw=function()
   cls()
   color(4)
-  roundrect(46,p.y-1,81,p.y+9)
+  roundrect(x-1,p.y-1,x+w,p.y+9)
   color(9)
-  drawtext(
-   "level "..level,p.x,p.y
-  )
-  if t>30 then
+  drawtext(s,p.x,p.y)
+  if t>60 then
    color(9)
    drawtext("get ready!",41,62)
   end
@@ -1858,11 +1885,13 @@ function start_level()
  _update60=function()
   p:lerp(tp,0.1)
   t+=1
-  if t==30 then
+  if t==60 then
    sfx(7)
   end
-  if t==90 or action_btnp() then
-   load_level()
+  if (
+   t==180 or action_btnp()
+  ) then
+   load_level(lspec)
   end
  end
 end
@@ -2205,27 +2234,33 @@ end
 -- main
 
 levelspecs={
-{--warm-up
+{
+ name="warm-up",
  grid={9,7,0,7},
  bots={{1,0,2},{7,0,4}},
  misc={30}
-},{--fill the gaps/no choice
+},{
+ name="no choice",
  grid={9,7,44,0},
  bots={{0,5,3,60},{8,1,1,60}},
  misc={180,1}
-},{--level1
+},{
+ name="spacious",
  grid={9,7,0,0},
  bots={{0,6},{8,0}},
  misc={180}
-},{--level2
+},{
+ name="detour",
  grid={9,7,9,0},
  bots={{4,0,4,60},{4,6,2,60}},
  misc={240}
-},{--open ended
+},{
+ name="valley",
  grid={9,8,18,0},
  bots={{0,7},{8,0}},
  misc={240}
-},{--cramped
+},{
+ name="cramped",
  grid={8,8,27,0},
  bots={{0,7},{7,0}},
  misc={240}
