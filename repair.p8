@@ -1930,10 +1930,10 @@ function load_level(lspec)
  _draw=draw_game
 
  menuitem(
-  1,"end attempt",on_abort
+  1,"end attempt",on_user_abort
  )
  menuitem(
-  2,"end game",end_game
+  2,"end game",on_user_end_game
  )
 
  switch_music(0)
@@ -1976,17 +1976,6 @@ function start_level()
   ) then
    load_level(lspec)
   end
- end
-end
-
-function next_level()
- level+=1
- if level<=#levelspecs then
-  start_level()
- else
-  morph_grid(21)
-  sleep(30,true)
-  mainmenu()
  end
 end
 
@@ -2053,6 +2042,15 @@ function draw_game()
  )
 end
 
+function bot_at(pos)
+ for bot in all(bots) do
+  if bot.pos==pos then
+   return true
+  end
+ end
+ return false
+end
+
 function on_tile_placed(tray)
  score+=10
 end
@@ -2081,7 +2079,6 @@ function on_grid_cleared()
 
  sfx(9)
  end_play()
- speedup_cr=nil
  end_anim=cowrap(
   "level_done_anim",
   level_done_anim
@@ -2107,11 +2104,6 @@ function on_clash(bot)
  end
 end
 
-function on_abort()
- sfx(4)
- on_death()
-end
-
 function end_play()
  switch_music(-1)
 
@@ -2134,34 +2126,55 @@ function on_death()
    "retry_anim",retry_anim
   )
  else
-  gameover(2)
+  game_end(2)
  end
 end
 
-function end_game()
+function on_user_abort()
+ sfx(4)
+ on_death()
+end
+
+function on_user_end_game()
  end_play()
- gameover()
+ game_end()
 end
 
-function bot_at(pos)
- for bot in all(bots) do
-  if bot.pos==pos then
-   return true
-  end
- end
- return false
-end
+--starts end game animation
+function game_end(wait)
+ printh("game end")
 
-function gameover(wait)
- printh("game over")
  end_anim=cowrap(
-  "gameover_anim",
+  "game_end_anim",
   function()
    sleep(wait or 0)
    sfx(10)
-   gameover_anim()
+   game_end_anim()
   end
  )
+end
+
+function game_end_anim()
+ local morph_text=12 --game over
+ if level>#levelspecs then
+  morph_text=21 --the end
+ end
+ morph_grid(morph_text)
+
+ --score remaining lives
+ while lives.dec() do
+  score+=100
+  while draw_score<score do
+   sfx(6)
+   yield()
+  end
+  sleep(1)
+ end
+
+ --todo: check hi-score
+
+ sleep(30,true)
+ mainmenu()
 end
 
 function retry_anim()
@@ -2213,12 +2226,13 @@ function level_done_anim()
  end
 
  sleep(2,true)
- next_level()
-end
 
-function gameover_anim()
- morph_grid(12)
- mainmenu()
+ level+=1
+ if level<=#levelspecs then
+  start_level()
+ else
+  game_end_anim()
+ end
 end
 
 function morph_grid(map_x0)
@@ -2309,8 +2323,6 @@ function morph_grid(map_x0)
    end
    yield()
   end
-
-  sleep(3,true)
  end
 
  anim()
