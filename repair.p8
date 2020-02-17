@@ -341,19 +341,19 @@ timebar={
 
 function draw_timebar(time_left)
  if time_left<0 then
-  spr(12,96,8,4,1) --timed out
+  spr(12,95,9,4,1) --timed out
   return
  end
 
  local i=1
- local x=127
+ local x=126
  while (time_left>0) do
   local tb=timebar[i]
   local l=min(
    tb[1],time_left/tb[2]
   )-1
-  rectfill(x-l,9,x,11,tb[3])
-  line(x-l,12,x,12,tb[4])
+  rectfill(x-l,10,x,12,tb[3])
+  line(x-l,13,x,13,tb[4])
   time_left-=tb[2]*tb[1]
   x-=tb[1]
   i+=1
@@ -503,7 +503,8 @@ function draw_tile(
   end
   spr(
    si,
-   screen_pos.x,screen_pos.y,
+   screen_pos.x,
+   screen_pos.y,
    2,2
   )
  else
@@ -1522,8 +1523,11 @@ function tiletray:new(size)
   (size-1)*o.xsep
  )
  o.x0=63-flr(w/2)
+ o.y0=1.5
 
- o.cursor_pos=vector:new(o.x0,0)
+ o.cursor_pos=vector:new(
+  o.x0,o.y0
+ )
 
  o.tiles={}
  o.num_tiles=0
@@ -1567,7 +1571,7 @@ function tiletray:_update_target_pos()
  )
  for i,t in pairs(self.tiles) do
   t.target_pos=vector:new(
-   self.x0+(i-1)*mul,0
+   self.x0+(i-1)*mul,self.y0
   )
  end
 end
@@ -1867,7 +1871,7 @@ function new_lives()
 
  function me.draw()
   for i=1,flr(draw_lives/8) do
-   spr(48,128-8*i,0)
+   spr(48,128-8*i,1)
   end
   local m=draw_lives%8
   if m!=0 then
@@ -2037,7 +2041,7 @@ function draw_game()
  lives.draw()
 
  color(4)
- draw_number(draw_score,0,2,5)
+ draw_number(draw_score,1,3,5)
 
  draw_timebar(
   ticks_remaining/fps
