@@ -2174,7 +2174,10 @@ function bot_speedup()
  while not done do
   done=true
   for bot in all(bots) do
-   if bot.period>1 then
+   if (
+    bot.period>1 and
+    bot.anim_cr==nil
+   ) then
     bot.period=ceil(bot.period/2)
     done=false
    end
