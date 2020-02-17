@@ -1818,10 +1818,12 @@ function gridcursor:draw()
   if not self.allowed then
    setpal(2) --grey out path
   end
-  draw_tile(
-   tray:selected_tile(),
-   self.draw_pos
-  )
+
+  local t=tray:selected_tile()
+  if t!=nil then
+   draw_tile(t,self.draw_pos)
+  end
+
   pal()
  end
 
