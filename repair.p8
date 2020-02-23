@@ -1533,10 +1533,7 @@ function tiletray:new(size)
 
  o.tiles={}
  o.num_tiles=0
- while (
-  o.num_tiles<size and
-  tiletray._replenish(o)
- ) do end
+ tiletray._replenish(o)
 
  o.on_placed={}
  o.on_complete={}
@@ -1594,14 +1591,8 @@ function tiletray:_pop()
  return popped
 end
 
-function tiletray:_replenish()
+function tiletray:_push(tile)
  assert(self.num_tiles<self.size)
-
- local tile=self:_new_tile()
- if tile==nil then
-  --no new tile is placeable
-  return false
- end
 
  for i=self.num_tiles,1,-1 do
   self.tiles[i+1]=self.tiles[i]
@@ -1615,6 +1606,24 @@ function tiletray:_replenish()
  )
  self.num_tiles+=1
  self:_update_target_pos()
+end
+
+function tiletray:_replenish()
+ assert(self.num_tiles<self.size)
+
+ local size0=self.size
+ while (
+  self.num_tiles<self.size
+ ) do
+  local tile=self:_new_tile()
+  if tile==nil then
+   --no new tile is placeable
+   return size0!=self.size
+  else
+   self:_push(tile)
+  end
+ end
+
  return true
 end
 
