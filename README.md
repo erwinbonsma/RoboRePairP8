@@ -1,7 +1,7 @@
 Bumble Bots Re-Pair
 ===================
 
-Bumble Bots Re-Pair will be an action game with puzzle elements for the [PICO-8][] fantasy console.
+Bumble Bots Re-Pair is an action game with puzzle elements for the [PICO-8][] fantasy console.
 Although the game play is entirely different, it bears similarities in theming to my earlier [Bumble Bots] game.
 
 Origin
