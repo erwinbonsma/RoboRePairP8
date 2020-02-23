@@ -1677,12 +1677,6 @@ function tiletray:update()
   self.tiles,
   screentile.update
  )
- if (
-  self.update_cr!=nil and
-  coinvoke(self.update_cr)
- ) then
-  self.update_cr=nil
- end
 end
 
 function tiletray:draw()
