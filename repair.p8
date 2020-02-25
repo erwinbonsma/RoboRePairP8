@@ -1310,6 +1310,9 @@ function bot:_forced_nxt2_pos()
  local t=grid:tile_at(
   self.nxt_pos
  )
+ if t==nil then
+  return nil
+ end
  local exits=t:exits_from(
   opposite(self.nxt_dir)
  )
