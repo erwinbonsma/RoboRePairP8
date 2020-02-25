@@ -1614,14 +1614,14 @@ end
 function tiletray:_replenish()
  assert(self.num_tiles<self.size)
 
- local size0=self.size
+ local num0=self.num_tiles
  while (
   self.num_tiles<self.size
  ) do
   local tile=self:_new_tile()
   if tile==nil then
    --no new tile is placeable
-   return size0!=self.size
+   return num0!=self.num_tiles
   else
    self:_push(tile)
   end
