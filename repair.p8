@@ -2298,12 +2298,11 @@ function morph_grid(map_x0)
 
  local update_tile=function(pos)
   local i=grid:_pos2idx(pos)
-  local status=tile_status[i]
-  if status==0 then
+  if tile_status[i]==0 then
    tile_status[i]=1
    add(ready,i)
   end
-  if status!=2 then
+  if tile_status[i]!=2 then
    local tile=grid:patch_tile(
     pos
    )
@@ -2311,7 +2310,7 @@ function morph_grid(map_x0)
     tile==target_tile(pos)
    ) then
     --no further update needed
-    if status==1 then
+    if tile_status[i]==1 then
      del(ready,i)
     end
     tile_status[i]=2
