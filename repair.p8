@@ -1776,7 +1776,7 @@ function gridcursor:update()
   self:_pos_changed()
  end
 
- if btnp(🅾️) then
+ if btnp(❎) then
   if tray.num_tiles>=2 then
    printh("tray switch")
    tray:switch()
@@ -1786,7 +1786,7 @@ function gridcursor:update()
   end
  end
 
- if btnp(❎) then
+ if btnp(🅾️) then
   if (
    self.allowed and
    not bot_at(self.pos)
