@@ -366,9 +366,22 @@ function roundrect(x1,y1,x2,y2)
  line(x2,y1+1,x2,y2-1)
 end
 
+music_enabled=true
+
+function toggle_music()
+ music_enabled=not music_enabled
+ if music_enabled then
+  music(current_track)
+ else
+  music(-1)
+ end
+end
+
 function switch_music(track)
  if track!=current_track then
-  music(track)
+  if music_enabled then
+   music(track)
+  end
   current_track=track
  end
 end
@@ -2424,20 +2437,34 @@ function mainmenu()
  local clk=0
  local buttons_enabled=false
  local active_button=1
+ local menu_actions={
+  show_help,new_game,show_hof,
+  toggle_music
+ }
 
  local draw_button=function(idx)
   local s=204+idx*2+flr(idx/2)*28
   local x=22+idx*23
+  local disabled=(
+   idx==3 and
+   not music_enabled
+  )
   if idx==active_button then
-   pal(9,4)
+   if not disabled then
+    pal(9,4)
+   end
    palt(0,true)
    for i=1,4 do
     local d=vdirs[i]
     spr(s,x+d.x,112+d.y,2,2)
    end
+   pal()
   end
-  pal()
+  if disabled then
+   pal(9,4)
+  end
   spr(s,x,112,2,2)
+  pal()
  end
 
  _update60=function()
@@ -2465,10 +2492,9 @@ function mainmenu()
     )%4
    end
    if btnp(🅾️) then
-    new_game()
-   end
-   if btnp(❎) then
-    showhelp()
+    menu_actions[
+     active_button+1
+    ]()
    end
   end
  end
@@ -2512,14 +2538,24 @@ function mainmenu()
  end
 end
 
-function showhelp()
- _update60=function()
-  if action_btnp() then
-   mainmenu()
-  end
+function update_back2menu()
+ if action_btnp() then
+  mainmenu()
  end
+end
 
+function show_hof()
+ _update60=update_back2menu
+ _draw=draw_hof
+end
+
+function show_help()
+ _update60=update_back2menu
  _draw=draw_help
+end
+
+function draw_hof()
+ cls()
 end
 
 function draw_help()
