@@ -2577,14 +2577,14 @@ function mainmenu()
    palt(0,true)
    for i=1,4 do
     local d=vdirs[i]
-    spr(s,x+d.x,112+d.y,2,2)
+    spr(s,x+d.x,110+d.y,2,2)
    end
    pal()
   end
   if disabled then
    pal(9,4)
   end
-  spr(s,x,112,2,2)
+  spr(s,x,110,2,2)
   pal()
  end
 
