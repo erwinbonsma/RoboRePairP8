@@ -1147,6 +1147,9 @@ function crash_anim(bot)
   for i=1,4 do
    bot.crash_sprite+=2
    bot.dirv:add(dr)
+   if i==3 then
+    bot:_release_prv()
+   end
    yield()
   end
 
