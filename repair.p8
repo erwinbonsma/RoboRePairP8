@@ -279,7 +279,7 @@ end
 
 glyph_map={
  24, 1, 2,16, 4, 5,17,20,
-  8,19,10,23,18,22,21,15
+  8,19, 0,23,18,22,21,15
 }
 function drawtitletext(s,x,y)
  palt(7,true)
