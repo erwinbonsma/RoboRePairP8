@@ -2610,12 +2610,21 @@ end
 function draw_hof()
  cls()
 
+ local drwrect=function(x,y,w,h)
+  rect(x,y,x+w-1,y+h-1,5)
+  rectfill(x+1,y+1,x+w-2,y+h-2,0)
+ end
+
  drawtitletext("hi-score",8,0)
  draw_number(9170,30,28,5,true)
 
+ rectfill(5,55,122,127,1)
  for i=0,9 do
-  local x=flr(i/5)*64+10
-  local y=(i%5)*14+60
+  local x=flr(i/5)*64+9
+  local y=(i%5)*14+59
+  drwrect(x-2,y-2,16,13,4)
+  drwrect(x+18,y-2,30,13,4)
+  color(9)
   draw_number(i+1,x,y,2)
   draw_number(234,x+20,y,4)
  end
