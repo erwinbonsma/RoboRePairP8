@@ -2162,7 +2162,13 @@ function draw_game()
  end
  lives.draw()
 
- color(4)
+ if (
+  score>hiscore_mgr.hi_score()
+ ) then
+  color(10)
+ else
+  color(4)
+ end
  draw_number(draw_score,1,3,5)
 
  draw_timebar(
