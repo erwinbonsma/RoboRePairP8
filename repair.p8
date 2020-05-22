@@ -2166,7 +2166,7 @@ function draw_game()
  lives.draw()
 
  if (
-  score>hiscore_mgr.hi_score()
+  score>=hiscore_mgr.hi_score()
  ) then
   color(10)
  else
