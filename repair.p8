@@ -2663,23 +2663,29 @@ function draw_hof()
   rectfill(x+1,y+1,x+w-2,y+h-2,0)
  end
 
- drawtitletext("hi-score",8,0)
+ drawtitletext("hi-scores",0,0)
+
+ rectfill(5,26,122,127,1)
+ drwrect(27,28,74,27)
+
  draw_number(
   hiscore_mgr.hi_score(),
-  30,28,5,true
+  30,31,5,true
  )
 
- rectfill(5,55,122,127,1)
  for i=0,9 do
-  local x=flr(i/5)*64+9
+  local right=flr(i/5)
+  local x=right*64+10
   local y=(i%5)*14+59
-  drwrect(x-2,y-2,16,13,4)
-  drwrect(x+18,y-2,30,13,4)
+  local x1=x+right*32
+  local x2=x+(1-right)*20-1
+  drwrect(x1-2,y-2,16,13,4)
+  drwrect(x2-2,y-2,30,13,4)
   color(9)
-  draw_number(i+1,x,y,2)
+  draw_number(i+1,x1,y,2)
   draw_number(
    hiscore_mgr.level_score(i+1),
-   x+20,y,4
+   x2,y,4
   )
  end
 end
