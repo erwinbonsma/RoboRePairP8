@@ -1963,11 +1963,8 @@ function new_lives()
  local clk=0
 
  function me.inc()
-  local can_inc=num_lives<3
-  if can_inc then
-   num_lives+=1
-  end
-  return can_inc
+  --lives can temp exceed max
+  num_lives+=1
  end
 
  function me.dec()
@@ -1984,6 +1981,11 @@ function new_lives()
    local d=num_lives*8-draw_lives
    if d!=0 then
     draw_lives+=sgn(d)
+    if draw_lives==32 then
+     --do not let lives equal 4
+     num_lives-=1
+     score+=100
+    end
    end
   end
  end
@@ -2329,15 +2331,14 @@ function level_done_anim()
  --wiggle time!
  sleep(3)
 
- if not lives.inc() then
-  --already maxed out
-  score+=100
-  while draw_score<score do
-   sfx(6)
-   yield()
-  end
- else
-  sfx(11)
+ lives.inc()
+ sfx(11)
+
+ sleep(2)
+
+ while draw_score<score do
+  sfx(6)
+  yield()
  end
 
  sleep(0.5)
