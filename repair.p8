@@ -438,6 +438,49 @@ function switch_music(track)
   current_track=track
  end
 end
+
+function new_hiscore_mgr()
+ local me={}
+ local vmajor=1
+ local vminor=0
+
+ cartdata("eriban_bbots_repair")
+ if dget(0)!=vmajor then
+  dset(0,vmajor)
+  dset(1,vminor)
+  for i=2,12 do
+   dset(i,0)
+  end
+ end
+
+ me.level_score=function(level)
+  return dget(2+level)
+ end
+
+ me.level_done=function(
+  level,level_score
+ )
+  local old=dget(2+level)
+  if level_score>old then
+   dset(2+level,level_score)
+  end
+ end
+
+ me.hi_score=function()
+  return dget(2)
+ end
+
+ me.game_done=function(score)
+  local old=dget(2)
+  if score>old then
+   dset(2,score)
+  end
+ end
+
+ return me
+end
+
+hiscore_mgr=new_hiscore_mgr()
 -->8
 -- tiles
 gridtile={}
@@ -2035,6 +2078,7 @@ function start_level()
  local tp=vector:new(x,50)
 
  switch_music(-1)
+ level_start_score=score
 
  _draw=function()
   cls()
@@ -2253,7 +2297,7 @@ function game_end_anim()
   sleep(1)
  end
 
- --todo: check hi-score
+ hiscore_mgr.game_done(score)
 
  sleep(30,true)
  mainmenu()
@@ -2306,6 +2350,10 @@ function level_done_anim()
   sfx(6)
   yield()
  end
+
+ hiscore_mgr.level_done(
+  level,score-level_start_score
+ )
 
  sleep(2,true)
 
@@ -2616,7 +2664,10 @@ function draw_hof()
  end
 
  drawtitletext("hi-score",8,0)
- draw_number(9170,30,28,5,true)
+ draw_number(
+  hiscore_mgr.hi_score(),
+  30,28,5,true
+ )
 
  rectfill(5,55,122,127,1)
  for i=0,9 do
@@ -2626,7 +2677,10 @@ function draw_hof()
   drwrect(x+18,y-2,30,13,4)
   color(9)
   draw_number(i+1,x,y,2)
-  draw_number(234,x+20,y,4)
+  draw_number(
+   hiscore_mgr.level_score(i+1),
+   x+20,y,4
+  )
  end
 end
 
