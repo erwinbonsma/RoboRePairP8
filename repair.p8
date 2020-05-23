@@ -111,10 +111,6 @@ function dump_list(l)
  printh(s)
 end
 
-function rnd_item_from(l)
- return l[ceil(rnd(#l))]
-end
-
 col_pals={
  --extract path from tile
  { 0+256,
@@ -1310,9 +1306,7 @@ function bot:new(
  local tile=grid:tile_at(pos)
  o.nxt_pos=pos
  o.nxt_dir=dr0 or opposite(
-  rnd_item_from(
-   tile:all_entries()
-  )
+  rnd(tile:all_entries())
  )
  assert(
   grid:claim_tile(pos,o)==o
@@ -1396,7 +1390,7 @@ function bot:_handle_move(
  tile
 )
  --select next destination
- self.nxt_dir=rnd_item_from(
+ self.nxt_dir=rnd(
   tile:exits_from(
    opposite(self.dir)
   )
@@ -2520,7 +2514,7 @@ function morph_grid(map_x0)
   sleep(1)
 
   while #ready>0 do
-   local i=rnd_item_from(ready)
+   local i=rnd(ready)
    del(ready,i)
    local p=grid:_idx2pos(i)
    place_tile(p)
