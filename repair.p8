@@ -1135,6 +1135,33 @@ function crash_anim(bot)
  end
 end
 
+function heart_anim(bot)
+ bot.heart_si=55
+ local growing=true
+
+ return function()
+  while true do
+   if growing then
+    bot.heart_si-=1
+    if bot.heart_si==48 then
+     growing=false
+    end
+   else
+    bot.heart_si+=1
+    if (
+     bot.heart_si==55 or
+     rnd(4)<1
+    ) then
+     growing=true
+    end
+   end
+   yield()
+   yield()
+  end
+ end
+end
+
+
 function pair_anim(bot,bot2)
  --how much bot should rotate in
  --order to face the other bot
@@ -1171,8 +1198,13 @@ function pair_anim(bot,bot2)
 
   bot.period=10 --fix speed
 
+  bot.heart_cr=cowrap(
+   "heart_anim",
+   heart_anim(bot)
+  )
+
   --wiggle
-  for i=1,5 do
+  for i=1,7 do
    bot:_delta_rot(1)
    if first then sfx(13)  end
    yield()
@@ -1516,6 +1548,13 @@ function bot:update()
   return false
  end
 
+ if (
+  self.heart_cr!=nil and
+  coinvoke(self.heart_cr)
+ ) then
+  self.heart_cr=nil
+ end
+
  self.clk=(self.clk+1)%self.period
  if self.clk>0 then
   return true
@@ -1572,6 +1611,17 @@ function bot:draw()
    pos.y+self.dirv.y,
    self.sprite_size,
    self.sprite_size
+  )
+ end
+ if self.heart_si!=nil then
+  palt(0,true)
+  pal(4,8)
+  spr(
+   self.heart_si,
+   pos.x+self.dirv.x+
+    self.sprite_size*2,
+   pos.y+self.dirv.y+
+    self.sprite_size*2
   )
  end
  pal()
@@ -2390,6 +2440,7 @@ function morph_grid(map_x0)
  end
 
  grid:expand(9,8)
+
  for p in all(grid.positions) do
   local i=grid:_pos2idx(p)
   if (
