@@ -668,8 +668,8 @@ function tilegrid:new(
 
  o.positions={}
  o.tiles={}
- for x=0,o.w-1 do
-  for y=0,o.h-1 do
+ for y=0,o.h-1 do
+  for x=0,o.w-1 do
    local pos=vector:new(x,y)
    add(o.positions,pos)
 
@@ -1767,7 +1767,7 @@ function tiletray:_done()
  end
 
  --none of the tiles on the tray
- --cam be put on the grid
+ --can be put on the grid
  return true
 end
 
@@ -1847,10 +1847,23 @@ end
 function gridcursor:_pos_changed()
  self.draw_pos_target=
   grid:screen_pos(self.pos)
- self:_check_allowed()
+ if not self.disabled then
+  self:_check_allowed()
+ end
 end
 
-function gridcursor:update()
+function gridcursor:set_pos(p)
+ self.pos=p
+ self:_pos_changed()
+end
+
+function gridcursor:at_target()
+ return self.draw_pos:dist(
+  self.draw_pos_target
+ ) < 1
+end
+
+function gridcursor:handle_input()
  local pos=self.pos
  local pos_changed=false
  if btnp(⬅️) then
@@ -1871,7 +1884,6 @@ function gridcursor:update()
  end
 
  if pos_changed then
-  printh("pos changed")
   self:_pos_changed()
  end
 
@@ -1897,6 +1909,12 @@ function gridcursor:update()
   else
    sfx(1) --no can do
   end
+ end
+end
+
+function gridcursor:update()
+ if not self.disabled then
+  self:handle_input()
  end
 
  if self.contraction_clk>0 then
@@ -1938,7 +1956,14 @@ function draw_cursor(
 end
 
 function gridcursor:draw()
- if self.contraction==0 then
+ if self.hidden then
+  return
+ end
+
+ if (
+  self.contraction==0 and
+  not self.disabled
+ ) then
   setpal(3)
   setpal(1) --extract path
   if not self.allowed then
@@ -2193,7 +2218,8 @@ function on_tile_placed(tray)
 end
 
 function disable_input()
- curs=nil
+ curs.hidden=true
+ curs.disabled=true
  tray=nil
 end
 
@@ -2360,6 +2386,16 @@ function level_done_anim()
   sfx(6)
   yield()
  end
+
+ curs.hidden=false
+ for p in all(grid.positions) do
+  curs:set_pos(p)
+  while not curs:at_target() do
+   yield()
+  end
+  sleep(0.2)
+ end
+ curs.hidden=true
 
  hiscore_mgr.level_done(
   level,score-level_start_score
@@ -2657,6 +2693,7 @@ function mainmenu()
    end
   end
  end
+ --_draw=draw_oneline_title
 end
 
 function update_back2menu()
