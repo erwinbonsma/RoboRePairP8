@@ -839,10 +839,23 @@ function tilegrid:has_neighbour(
  return false
 end
 
+function tilegrid:has_open_ends()
+ for p in all(self.positions) do
+  local t=self:tile_at(p)
+  if (
+   t!=nil and
+   self:patch_tile(p,true)!=t
+  ) then
+   return true
+  end
+ end
+ return false
+end
+
 --ensure the tile connects to
 --its neighbours (again)
 function tilegrid:patch_tile(
- pos
+ pos,dry_run
 )
  local mask=0
  for dr in all(dirs) do
@@ -865,9 +878,11 @@ function tilegrid:patch_tile(
  else
   tile=tiles[mask+1]
  end
- self:screentile_at(
-  pos
- ).tile=tile
+ if not dry_run then
+  self:screentile_at(
+   pos
+  ).tile=tile
+ end
  return tile
 end
 
@@ -2366,6 +2381,29 @@ function bot_speedup()
  end
 end
 
+function penalize_open_ends()
+ curs.hidden=false
+ for p in all(grid.positions) do
+  curs:set_pos(p)
+  while not curs:at_target() do
+   yield()
+  end
+  sleep(0.2)
+  local t0=grid:tile_at(p)
+  if t0!=nil then
+   local t1=grid:patch_tile(p)
+   if t1!=t0 then
+    score-=10
+    while draw_score!=score do
+     sfx(15)
+     yield()
+    end
+   end
+  end
+ end
+ curs.hidden=true
+end
+
 function level_done_anim()
  --wiggle time!
  sleep(3)
@@ -2393,26 +2431,9 @@ function level_done_anim()
   yield()
  end
 
- curs.hidden=false
- for p in all(grid.positions) do
-  curs:set_pos(p)
-  while not curs:at_target() do
-   yield()
-  end
-  sleep(0.2)
-  local t0=grid:tile_at(p)
-  if t0!=nil then
-   local t1=grid:patch_tile(p)
-   if t1!=t0 then
-    score-=10
-    while draw_score!=score do
-     sfx(15)
-     yield()
-    end
-   end
-  end
+ if grid:has_open_ends() then
+  penalize_open_ends()
  end
- curs.hidden=true
 
  hiscore_mgr.level_done(
   level,score-level_start_score
