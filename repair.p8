@@ -2715,31 +2715,44 @@ function draw_help()
 
  drawtitletext("help",32,0)
 
+ rectfill(2,25,125,127,1)
+
  color(9)
- roundrect(4,27,123,37)
+ rectfill(4,27,123,37,9)
  color(0)
  drawtext(
   "re-unite (re-pair) the bots",5,28
  )
+ palt(0,true)
+ spr(168,44,40,2,2)
+ spr(168,67,40,2,2,true)
+ pal(4,8)
+ spr(48,60,43)
+ pal()
 
+ rectfill(6,79,121,89,0)
+ rectfill(6,93,121,123,0)
  color(9)
  drawtext(
-  "guide them by extending the",2,45
+  "guide them by extending",11,56
  )
  drawtext(
-  "tracks they traverse",15,54
+  "the tracks they traverse",6,66
  )
 
  drawtext(
-  "changes the selected tile",11,72
+  "change the active tile",19,80
  )
  drawtext(
-  "puts it on the grid when",11,84
+  "put it on the grid when",19,94
  )
- spr(10,2,73)
- spr(11,2,85)
+ spr(10,8,81)
+ spr(11,8,95)
  drawtext(
-  "it fits and extends a path",11,93
+  "- it fits and",19,104
+ )
+ drawtext(
+  "- extends a track",19,114
  )
 end
 
