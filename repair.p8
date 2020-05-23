@@ -1274,7 +1274,7 @@ function bot:new(
   o.sprite_index0 or 160
  )
  o.max_dirv=o.max_dirv or 6
- o.meet_dist=o.meet_dist or 11
+ o.meet_dist=o.meet_dist or 12
 
  --type (inc. speed and color)
  o.typ=typ or 1
@@ -1619,9 +1619,9 @@ function bot:draw()
   spr(
    self.heart_si,
    pos.x+self.dirv.x+
-    self.sprite_size*2,
+    self.sprite_size*2-1,
    pos.y+self.dirv.y+
-    self.sprite_size*2
+    self.sprite_size*2-1
   )
  end
  pal()
