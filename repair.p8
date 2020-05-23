@@ -635,7 +635,8 @@ end
 tilegrid={}
 
 function tilegrid:new(
- tilesize,width,height,mapx,mapy
+ tilesize,width,height,
+ mapx,mapy,origin_dy
 )
  local o=setmetatable({},self)
  self.__index=self
@@ -644,7 +645,9 @@ function tilegrid:new(
  o.h=height
 
  o.tilesize=tilesize
- tilegrid._init_origin(o)
+ tilegrid._init_origin(
+  o,origin_dy
+ )
 
  o.positions={}
  o.tiles={}
@@ -674,21 +677,15 @@ function tilegrid:new(
  return o
 end
 
-function tilegrid:_init_origin()
+function tilegrid:_init_origin(
+ dy
+)
  self.x0=64-(
   self.w*self.tilesize\2
  )+0.5
  self.y0=64-(
   self.h*self.tilesize\2
- )+0.5
-
- if self.tilesize==13 then
-  --shift down to account for
-  --tray
-  self.y0+=7
- else
-  self.y0-=2
- end
+ )+dy+0.5
 end
 
 function tilegrid:_pos2idx(pos)
@@ -1999,7 +1996,7 @@ end
 function load_level(lspec)
  local gs=lspec.grid
  grid=tilegrid:new(
-  13,gs[1],gs[2],gs[3],gs[4]
+  13,gs[1],gs[2],gs[3],gs[4],7
  )
 
  bots={}
@@ -2542,7 +2539,9 @@ function mainmenu()
   )
  end
 
- grid=tilegrid:new(8,12,11,0,16)
+ grid=tilegrid:new(
+  8,12,11,0,16,-2
+ )
  local bots={}
  add(
   bots,
@@ -2670,8 +2669,37 @@ function show_hof()
 end
 
 function show_help()
- _update60=update_back2menu
- _draw=draw_help
+ grid=tilegrid:new(
+  13,9,1,44,0,-18
+ )
+
+ bots={}
+ add(
+  bots,
+  bot:new(vector:new(0,0))
+ )
+ add(
+  bots,
+  bot:new(vector:new(8,0))
+ )
+
+ _update60=function()
+  update_back2menu()
+
+  grid:update()
+  for bot in all(bots) do
+   if not bot:update() then
+    del(bots,bot)
+   end
+  end
+ end
+
+ _draw=function()
+  draw_help()
+
+  grid:draw()
+  foreach(bots,bot.draw)
+ end
 end
 
 function draw_hof()
@@ -2722,12 +2750,6 @@ function draw_help()
  drawtext(
   "re-unite (re-pair) the bots",5,28
  )
- palt(0,true)
- spr(168,44,40,2,2)
- spr(168,67,40,2,2,true)
- pal(4,8)
- spr(48,60,43)
- pal()
 
  rectfill(6,79,121,89,0)
  rectfill(6,93,121,123,0)
