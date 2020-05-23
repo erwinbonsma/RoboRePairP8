@@ -708,8 +708,8 @@ function tilegrid:expand(w,h)
  self.h=h
  self:_init_origin()
 
- for x=0,w-1 do
-  for y=0,h-1 do
+ for y=0,h-1 do
+  for x=0,w-1 do
    local pos=vector:new(x,y)
    local scr_tile
    if x>=w_old or y>=h_old then
