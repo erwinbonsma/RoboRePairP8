@@ -99,18 +99,6 @@ function opposite(dr)
  return 1+(dr+1)%4
 end
 
-function dump_list(l)
- local s="["
- for i in all(l) do
-  if #s>1 then
-   s=s..","
-  end
-  s=s..i
- end
- s=s.."]"
- printh(s)
-end
-
 col_pals={
  --extract path from tile
  { 0+256,
@@ -543,15 +531,6 @@ function gridtile:exits_from(
  return l
 end
 
-function gridtile:dump()
- printh("idx="..self.idx)
- printh("entries="..self.entries)
- printh("exits=")
- for e in all(self.connections) do
-  printh("  "..e)
- end
-end
-
 function rnd_tile_from(tiles)
  if #tiles==0 then
   return nil
@@ -764,30 +743,6 @@ function tilegrid:screentile_at(
  return nil
 end
 
-function tilegrid:dump_claimed()
- for p in all(self.positions) do
-  local t=self.tiles[
-   self:_pos2idx(p)
-  ]
-  if t.bot!=nil then
-   printh("  claimed: "..p:to_string())
-  end
- end
-end
-
-function tilegrid:num_claimed()
- local total=0
- for p in all(self.positions) do
-  local t=self.tiles[
-   self:_pos2idx(p)
-  ]
-  if t.bot!=nil then
-   total+=1
-  end
- end
- return total
-end
-
 function tilegrid:release_tile(
  pos,bot
 )
@@ -795,9 +750,7 @@ function tilegrid:release_tile(
   self:_pos2idx(pos)
  ]
  if t.bot==bot then
-  printh("releasing "..pos:to_string())
   t.bot=nil
-  --self:dump_claimed()
  end
 end
 
@@ -809,8 +762,6 @@ function tilegrid:claim_tile(
  ]
  if t.bot==nil then
   t.bot=bot
-  printh("claimed "..pos:to_string())
-  --self:dump_claimed()
  end
 
  return t.bot
@@ -1423,7 +1374,6 @@ end
 
 --release previous tile
 function bot:_release_prv()
- printh("releasing previous")
  if self.prv_pos!=nil then
   grid:release_tile(
    self.prv_pos,self
@@ -1487,7 +1437,6 @@ end
 --check if next tile is free. if
 --not, claim it
 function bot:_is_blocked()
- printh("check blocked")
  if self.meeting!=nil then
   --never blocked when meeting
   return false
@@ -1511,8 +1460,6 @@ function bot:_is_blocked()
  --tile is blocked by another
  --bot but our paths will not
  --cross, so just wait
- printh("tile "..self.nxt_pos:to_string()..
-  " is blocked")
  return true
 end
 
@@ -1539,7 +1486,6 @@ function bot:_clashed()
 end
 
 function bot:stop()
- printh("bot stopped")
  self.move_cr=nil
 end
 
@@ -1551,7 +1497,6 @@ function bot:_handle_meeting()
  local p2=grid:screen_pos(
   mbot.pos
  )+mbot.dirv
- printh("dist="..p1:dist(p2))
  if (
   p1:dist(p2)<=self.meet_dist
  ) then
@@ -1630,13 +1575,6 @@ function bot:draw()
   )
  end
  pal()
-end
-
-function bot:dump()
- printh("pos="..self.pos:to_string())
- printh("dir="..self.dir)
- printh("nxt_pos="..self.nxt_pos:to_string())
- printh("nxt_dir="..self.nxt_dir)
 end
 
 -->8
@@ -1903,7 +1841,6 @@ function gridcursor:handle_input()
 
  if btnp(❎) then
   if tray.num_tiles>=2 then
-   printh("tray switch")
    tray:switch()
    self:_check_allowed()
   else
@@ -1916,7 +1853,6 @@ function gridcursor:handle_input()
    self.allowed and
    not bot_at(self.pos)
   ) then
-   printh("placed tile")
    tray:place_tile(self.pos)
    self.allowed=false
    self.contraction_clk=20
@@ -2237,7 +2173,6 @@ function disable_input()
 end
 
 function on_grid_done(tray)
- printh("grid done!")
  disable_input()
 
  speedup_cr=cowrap(
@@ -2251,8 +2186,6 @@ function on_move(bot)
 end
 
 function on_grid_cleared()
- printh("all bots paired")
-
  sfx(9)
  end_play()
  end_anim=cowrap(
@@ -2318,8 +2251,6 @@ end
 
 --starts end game animation
 function game_end(wait)
- printh("game end")
-
  end_anim=cowrap(
   "game_end_anim",
   function()
@@ -2593,7 +2524,6 @@ levelspecs={
 }}
 
 function _init()
- printh("---- init ----")
  mainmenu()
 end
 
