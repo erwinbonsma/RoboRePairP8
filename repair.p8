@@ -680,12 +680,15 @@ end
 function tilegrid:_init_origin(
  dy
 )
+ if dy!=nil then
+  self.origin_dy=dy
+ end
  self.x0=64-(
   self.w*self.tilesize\2
  )+0.5
  self.y0=64-(
   self.h*self.tilesize\2
- )+dy+0.5
+ )+self.origin_dy+0.5
 end
 
 function tilegrid:_pos2idx(pos)
