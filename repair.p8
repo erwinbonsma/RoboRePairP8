@@ -362,7 +362,7 @@ function draw_digit(
  for j=0,3 do
   if band(v,shl(1,3+j))!=0 then
    local x=x0+d*(j%2)
-   local y=y0+d*flr(j/2)+1
+   local y=y0+d*(j\2)+1
    if large then
     spr(45,x,y+1)
    else
@@ -613,7 +613,7 @@ function draw_tile(
    si=46
   else
    local v=tile.idx-1
-   si=64+v*2+16*flr(v/8)
+   si=64+v*2+16*(v\8)
   end
   spr(
    si,
@@ -700,11 +700,11 @@ function tilegrid:new(
 end
 
 function tilegrid:_init_origin()
- self.x0=64-flr(
-  self.w*self.tilesize/2
+ self.x0=64-(
+  self.w*self.tilesize\2
  )+0.5
- self.y0=64-flr(
-  self.h*self.tilesize/2
+ self.y0=64-(
+  self.h*self.tilesize\2
  )+0.5
 
  if self.tilesize==13 then
@@ -1661,7 +1661,7 @@ function tiletray:new(size)
   size*grid.tilesize+
   (size-1)*o.xsep
  )
- o.x0=63-flr(w/2)
+ o.x0=63-w\2
  o.y0=1.5
 
  o.cursor_pos=vector:new(
@@ -2040,14 +2040,14 @@ function new_lives()
  end
 
  function me.draw()
-  for i=1,flr(draw_lives/8) do
+  for i=1,draw_lives\8 do
    spr(48,128-8*i,1)
   end
   local m=draw_lives%8
   if m!=0 then
    spr(
     56-m,
-    128-8*ceil(draw_lives/8),0
+    120-8*(draw_lives\8),0
    )
   end
  end
@@ -2124,7 +2124,7 @@ function start_level()
   lspec.name
  )
  local w=textwidth(s)
- local x=64-flr(w/2)
+ local x=64-w\2
  local p=vector:new(x,0)
  local tp=vector:new(x,50)
 
@@ -2638,7 +2638,7 @@ function mainmenu()
  }
 
  local draw_button=function(idx)
-  local s=204+idx*2+flr(idx/2)*28
+  local s=204+idx*2+(idx\2)*28
   local x=22+idx*23
   local disabled=(
    idx==3 and
@@ -2769,7 +2769,7 @@ function draw_hof()
  )
 
  for i=0,9 do
-  local right=flr(i/5)
+  local right=i\5
   local x=right*64+10
   local y=(i%5)*14+59
   local x1=x+right*32
