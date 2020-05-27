@@ -2363,7 +2363,6 @@ function penalize_open_ends()
   while not curs:at_target() do
    yield()
   end
-  sleep(0.2)
   local t0=grid:tile_at(p)
   if t0!=nil then
    local t1=grid:patch_tile(p)
