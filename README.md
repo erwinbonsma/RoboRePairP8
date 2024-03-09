@@ -14,7 +14,7 @@ The theme of that jam was "repair" and we created a game where you need to re-un
 robots (re-pair) by fixing the grid that they traverse.
 
 [PICO-8]: https://www.lexaloffle.com/pico-8.php
-[Bumble Bots]: https://bonsma.home.xs4all.nl/Games/BumbleBots
-[Bumble Bots Re-Pair]: https://bonsma.home.xs4all.nl/Games/BumbleBotsRepair
+[Bumble Bots]: https://erwinbonsma.nl/Games/BumbleBots/index.html
+[Bumble Bots Re-Pair]: https://erwinbonsma.nl/Games/BumbleBotsRepair/index.html
 [Robo Re-Pair]: https://globalgamejam.org/2020/games/robot-re-pair-3
 [Global Game Jam]: https://globalgamejam.org
